@@ -1,47 +1,66 @@
-/* * SegmentedHeader SASS Styles
- * Based on the design spec and image_6979b6.png, with gradient connector.
- */
+/* --- SegmentedHeader Flexible SASS Styles --- */
 
-// --- Variables from Design Spec ---
+// --- Color Variables ---
 $color-dark: #181d27;
 $color-medium-grey: #717680;
 $color-light-grey: #d5d7da;
 $color-connector-light: #e9eaeb;
 $color-white: #ffffff;
 
-// Gradient colors from your provided image
-$gradient-start: #b1e0f0; // Light blue
-$gradient-mid: #e1b1e0; // Pink/purple
-$gradient-end: #f0c7b1; // Orange/peach
+// --- Gradient Colors ---
+$gradient-start: #b1e0f0;
+$gradient-mid: #e1b1e0;
+$gradient-end: #f0c7b1;
 
+// --- Typography ---
 $font-primary: 'Satoshi', sans-serif;
 $font-weight-bold: 700;
 $font-weight-medium: 500;
-$font-size-sm: 14px;
-$line-height-sm: 20px;
+$font-size-sm: clamp(12px, 1.2vw, 14px);
+$line-height-sm: 1.4;
+
+// --- Spacing Variables ---
+$spacing-sm: 0.5rem;
+$spacing-md: 1rem;
+$spacing-lg: 2rem;
+
+// --- Mixins ---
+@mixin transition($properties...) {
+  transition: $properties 0.2s ease;
+}
 
 // --- Component Styles ---
-
 .segmentedHeader {
-  padding: 1rem; // 16px
+  width: 100%;
+  height: 100%;
   background-color: $color-white;
+  padding: $spacing-md;
   display: flex;
   justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  margin-left: calc(-1 * var(--page-padding, 0));
+  margin-right: calc(-1 * var(--page-padding, 0));
 
   &__container {
     display: flex;
-    align-items: flex-start;
     justify-content: center;
+    align-items: center;
+    width: 100%;
+    flex-wrap: wrap; // ✅ allows multiple rows
+    gap: 1.5rem 2rem; // vertical & horizontal spacing between rows
   }
 
   &__stepGroup {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
+    justify-content: center;
+    flex: 0 1 auto; // ✅ allows wrapping without stretching too wide
+    min-width: 120px;
+    margin: 0.5rem 0;
 
-    &:last-child {
-      .segmentedHeader__connector {
-        display: none;
-      }
+    &:last-child .segmentedHeader__connector {
+      display: none;
     }
   }
 
@@ -49,12 +68,14 @@ $line-height-sm: 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
-    width: 95px;
+    gap: 0.75rem;
+    width: auto; // ✅ only as wide as needed
+    min-width: 80px;
+    max-width: 120px;
     border: none;
     background: none;
     padding: 0;
-    transition: opacity 0.2s ease;
+    @include transition(opacity);
     cursor: not-allowed;
     opacity: 0.7;
 
@@ -65,17 +86,19 @@ $line-height-sm: 20px;
   }
 
   &__circle {
-    width: 20px;
-    height: 20px;
+    width: clamp(18px, 2vw, 24px);
+    height: clamp(18px, 2vw, 24px);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.2s ease;
-
     background-color: $color-light-grey;
+    @include transition(background-color);
+
     svg {
       display: none;
+      width: 60%;
+      height: 60%;
     }
   }
 
@@ -84,25 +107,22 @@ $line-height-sm: 20px;
     font-size: $font-size-sm;
     line-height: $line-height-sm;
     text-align: center;
-    transition: color 0.2s ease, font-weight 0.2s ease;
-
     color: $color-medium-grey;
     font-weight: $font-weight-medium;
+    word-wrap: break-word;
+    @include transition(color, font-weight);
   }
 
-  /* --- UPDATED CONNECTOR STYLE --- */
   &__connector {
+    flex-shrink: 0;
+    width: clamp(60px, 10vw, 120px);
     height: 4px;
-    min-width: 100px;
-    margin: 0 1rem;
-    margin-top: 8px;
-    transition: background-image 0.2s ease; // Transition the gradient
-
-    // Default (Future) state: light grey
-    background-image: linear-gradient(to right, $color-connector-light, $color-connector-light); // Solid color for future steps
+    margin: 0 0.75rem;
+    border-radius: 2px;
+    background-image: linear-gradient(to right, $color-connector-light, $color-connector-light);
+    @include transition(background-image);
   }
 
-  /* Modifier for Active/Completed steps */
   &__stepGroup.isDark {
     .segmentedHeader__circle {
       background-color: $color-dark;
@@ -115,8 +135,40 @@ $line-height-sm: 20px;
       font-weight: $font-weight-bold;
     }
     .segmentedHeader__connector {
-      // Apply the gradient for active/completed states
       background-image: linear-gradient(to right, $gradient-start, $gradient-mid, $gradient-end);
+    }
+  }
+
+  // --- Responsive Tweaks ---
+  @media (max-width: 1024px) {
+    &__container {
+      justify-content: center;
+      gap: 1rem 1.5rem;
+    }
+
+    &__connector {
+      width: clamp(40px, 8vw, 80px);
+    }
+  }
+
+  @media (max-width: 768px) {
+    &__container {
+      flex-direction: row; // ✅ still rows, but wraps nicely
+      justify-content: center;
+    }
+
+    &__stepGroup {
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 1rem;
+
+      .segmentedHeader__connector {
+        display: none; // hide connector in stacked layout
+      }
+    }
+
+    &__title {
+      font-size: clamp(12px, 2.5vw, 14px);
     }
   }
 }

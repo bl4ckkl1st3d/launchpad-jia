@@ -7,10 +7,13 @@ import { useState, Dispatch, SetStateAction } from "react";
 import SegmentedHeader from "./SegmentedHeader";
 // Import the component for the first step
 import Step1_Details from "../CareerSteps/Step1_Details";
+import {  errorToast } from "@/lib/Utils";
 
-// Import other step components as you build them
-// import Step2_CVReview from "../CareerSteps/Step2_CVReview";
-// ...
+// --- 1. ASSUMPTION: Import your toast function ---
+// Make sure to import your errorToast function
+// import { errorToast } from "@/lib/utils/toasts";
+
+// MOCK FUNCTION: Remove this if you have a real errorToast
 
 // We create a new, comprehensive interface for all steps
 export interface CareerData {
@@ -83,11 +86,120 @@ export default function NewCareerWizard() {
     });
   };
 
+  /**
+   * --- ADDED: This is the single validation function ---
+   * It checks all required fields for Step 1 and shows toasts.
+   * It returns 'true' if valid, 'false' if an error is found.
+   */
+  const validateStep1 = () => {
+    const {
+      jobTitle,
+      description,
+      workSetup,
+      employmentType,
+      province,
+      city,
+      salaryNegotiable,
+      minimumSalary,
+      maximumSalary,
+    } = careerData;
+
+    if (!jobTitle || jobTitle.trim().length === 0) {
+      errorToast("Job title is a required field", 1300);
+      return false;
+    }
+    if (!workSetup || workSetup.trim().length === 0) {
+      errorToast("Location Type (Work Setup) is required", 1300);
+      return false;
+    }
+    if (!employmentType || employmentType.trim().length === 0) {
+      errorToast("Employment Type is required", 1300);
+      return false;
+    }
+    if (!province || province.trim().length === 0) {
+      errorToast("State/Province is required", 1300);
+      return false;
+    }
+    if (!city || city.trim().length === 0) {
+      errorToast("City is required", 1300);
+      return false;
+    }
+    if (!description || description.trim().length === 0) {
+      errorToast("Job Description is required", 1300);
+      return false;
+    }
+
+    // Salary checks
+    if (!salaryNegotiable) {
+      if (!minimumSalary) {
+        errorToast("Minimum salary is required", 1300);
+        return false;
+      }
+      if (!maximumSalary) {
+        errorToast("Maximum salary is required", 1300);
+        return false;
+      }
+    }
+    
+    // Check if min > max, but only if both are numbers
+    if (
+      Number(minimumSalary) > Number(maximumSalary)
+    ) {
+      errorToast("Minimum salary cannot be greater than maximum salary", 1300);
+      return false;
+    }
+
+    // All checks passed
+    return true;
+  };
+  
+  /**
+   * --- UPDATED: Hooked validation into the save button ---
+   */
+  const confirmSaveCareer = async (status: "active" | "inactive") => {
+    // --- 1. Validate first ---
+    if (!validateStep1()) {
+      console.log("Validation failed");
+      return; // Stop if invalid
+    }
+
+    // --- 2. Proceed with saving if valid ---
+    setIsLoading(true);
+    console.log(`Saving career with status: ${status}`, careerData);
+    
+    return new Promise(resolve => {
+      setTimeout(() => {
+        if (!draftId) setDraftId(`mock-draft-${status}-id-456`);
+        setIsLoading(false);
+        console.log(`Career saved as ${status}!`);
+        resolve(true);
+      }, 1000);
+    });
+  };
+
+  /**
+   * --- UPDATED: Hooked validation into the 'Next' button ---
+   */
   const handleNextStep = async () => {
-    // 1. Save progress first
+    // --- 1. Validate the current step first ---
+    let isValid = true;
+    if (currentStep === 1) {
+      isValid = validateStep1();
+    }
+    // else if (currentStep === 2) {
+    //   isValid = validateStep2(); // etc.
+    // }
+
+    // --- 2. If not valid, stop here. The toast was already shown. ---
+    if (!isValid) {
+      console.log("Validation failed, cannot move to next step.");
+      return;
+    }
+
+    // 3. Save progress first
     await handleSaveDraft();
 
-    // 2. Move to next step if not last step
+    // 4. Move to next step if not last step
     if (currentStep < 5) {
       const nextStep = currentStep + 1;
       setCurrentStep(nextStep);
@@ -106,6 +218,9 @@ export default function NewCareerWizard() {
     }
   };
 
+  /**
+   * --- UPDATED: 'errors' prop removed ---
+   */
   const renderStep = () => {
     switch (currentStep) {
       case 1:
@@ -116,7 +231,7 @@ export default function NewCareerWizard() {
           />
         );
       // case 2:
-      //   return <Step2_CVReview careerData={careerData} setCareerData={setCareerData} />;
+      //  return <Step2_CVReview careerData={careerData} setCareerData={setCareerData} />;
       // ... other steps
       default:
         return (
@@ -130,14 +245,55 @@ export default function NewCareerWizard() {
 
   return (
     
-    <div className="new-career-wizard">
-      
-      {/* The pill header */}
-      <SegmentedHeader
-        currentStep={currentStep}
-        maxAchievedStep={maxAchievedStep}
-        setStep={setCurrentStep}
-      />
+    <div className="new-career-wizard" style={{ border: '1px solid #D5D7DA', width: "100%" }}>
+      {/* --- START: Your new header block --- */}
+      <div style={{ marginBottom: "35px", display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: "100%", border: '1px solid #D5D7DA' }}>
+        <h1 style={{ fontSize: "24px", fontWeight: 550, color: "#111827" }}>
+          {draftId ? (
+            <span>[DRAFT] {careerData.jobTitle}</span>
+          ) : (
+            "Add new career"
+          )}
+        </h1>
+        <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "10px" }}>
+          <button
+            // Simple check just to enable/disable button
+            disabled={careerData.jobTitle.trim() === "" || isLoading}
+            style={{ width: "fit-content", color: "#414651", background: "#fff", border: "1px solid #D5D7DA", padding: "8px 16px", borderRadius: "60px", cursor: (careerData.jobTitle.trim() === "" || isLoading) ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}
+            onClick={() => {
+              confirmSaveCareer("inactive");
+            }}>
+            Save as Unpublished
+          </button>
+          <button
+            disabled={careerData.jobTitle.trim() === "" || isLoading}
+            style={{ width: "fit-content", background: (careerData.jobTitle.trim() === "" || isLoading) ? "#D5D7DA" : "black", color: "#fff", border: "1px solid #E9EAEB", padding: "8px 16px", borderRadius: "60px", cursor: (careerData.jobTitle.trim() === "" || isLoading) ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}
+            onClick={() => {
+              confirmSaveCareer("active");
+            }}>
+            <i className="la la-check-circle" style={{ color: "#fff", fontSize: 20, marginRight: 8 }}></i>
+            Save as Published
+          </button>
+        </div>
+      </div>
+      {/* --- END: Your new header block --- */}
+
+      {/* --- START: Centered pill header --- */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          width: '100%',
+          border: '1px solid #D5D7DA',
+        }}
+      >
+        <SegmentedHeader
+          currentStep={currentStep}
+          maxAchievedStep={maxAchievedStep}
+          setStep={setCurrentStep}
+        />
+      </div>
+      {/* --- END: Centered pill header --- */}
 
       {/* The content for the current step */}
       <div className="p-8">
@@ -174,7 +330,7 @@ export default function NewCareerWizard() {
   );
 }
 
-// We need to define the props for our new Step component
+// --- UPDATED: 'errors' prop removed ---
 export interface CareerStepProps {
   careerData: CareerData;
   setCareerData: Dispatch<SetStateAction<CareerData>>;
