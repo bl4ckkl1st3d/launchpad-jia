@@ -59,13 +59,23 @@ const initialCareerData: CareerData = {
   city: "",
   teamAccess: [], // Your new requested field
 };
-
+export interface Step1Errors {
+  jobTitle?: string;
+  description?: string;
+  workSetup?: string;
+  employmentType?: string;
+  province?: string;
+  city?: string;
+  minimumSalary?: string;
+  maximumSalary?: string;
+}
 export default function NewCareerWizard() {
   const [currentStep, setCurrentStep] = useState(1);
   const [maxAchievedStep, setMaxAchievedStep] = useState(1);
   const [careerData, setCareerData] = useState<CareerData>(initialCareerData);
   const [draftId, setDraftId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<Step1Errors>({});
 
   // You will move your saveCareer and updateCareer logic here
   // and adapt it for the draft/next-step flow.
@@ -92,7 +102,9 @@ export default function NewCareerWizard() {
    * It checks all required fields for Step 1 and shows toasts.
    * It returns 'true' if valid, 'false' if an error is found.
    */
-  const validateStep1 = () => {
+
+  
+const validateStep1 = () => {
     const {
       jobTitle,
       description,
@@ -105,53 +117,70 @@ export default function NewCareerWizard() {
       maximumSalary,
     } = careerData;
 
+    const newErrors: Step1Errors = {};
+    let hasError = false;
+
+    const toastError = (message: string) => {
+      if (!hasError) { // Only show toast for the first error
+        errorToast(message, 1300);
+      }
+      hasError = true;
+    };
+
     if (!jobTitle || jobTitle.trim().length === 0) {
-      errorToast("Job title is a required field", 1300);
-      return false;
+      newErrors.jobTitle = "This is a required field";
+      toastError("Job title is a required field");
     }
     if (!workSetup || workSetup.trim().length === 0) {
-      errorToast("Location Type (Work Setup) is required", 1300);
-      return false;
+      newErrors.workSetup = "This is a required field";
+      toastError("Location Type (Work Setup) is required");
     }
     if (!employmentType || employmentType.trim().length === 0) {
-      errorToast("Employment Type is required", 1300);
-      return false;
+      newErrors.employmentType = "This is a required field";
+      toastError("Employment Type is required");
     }
     if (!province || province.trim().length === 0) {
-      errorToast("State/Province is required", 1300);
-      return false;
+      newErrors.province = "This is a required field";
+      toastError("State/Province is required");
     }
     if (!city || city.trim().length === 0) {
-      errorToast("City is required", 1300);
-      return false;
+      newErrors.city = "This is a required field";
+      toastError("City is required");
     }
     if (!description || description.trim().length === 0) {
-      errorToast("Job Description is required", 1300);
-      return false;
+      newErrors.description = "This is a required field";
+      toastError("Job Description is required");
     }
 
     // Salary checks
     if (!salaryNegotiable) {
       if (!minimumSalary) {
-        errorToast("Minimum salary is required", 1300);
-        return false;
+        newErrors.minimumSalary = "This is a required field";
+        toastError("Minimum salary is required");
       }
       if (!maximumSalary) {
-        errorToast("Maximum salary is required", 1300);
-        return false;
+        newErrors.maximumSalary = "This is a required field";
+        toastError("Maximum salary is required");
       }
     }
     
-    // Check if min > max, but only if both are numbers
+    // Check if min > max, but only if both are valid numbers
     if (
+      Number(minimumSalary) &&
+      Number(maximumSalary) &&
       Number(minimumSalary) > Number(maximumSalary)
     ) {
-      errorToast("Minimum salary cannot be greater than maximum salary", 1300);
-      return false;
+      newErrors.minimumSalary = "Min > Max";
+      newErrors.maximumSalary = "Min > Max";
+      toastError("Minimum salary cannot be greater than maximum salary");
     }
 
-    // All checks passed
-    return true;
+    // --- THIS IS THE CRITICAL FIX ---
+    // Save the new errors object to the component's state
+    setErrors(newErrors);
+    
+    // Return true if no errors were found
+    return !hasError;
   };
   
   /**
@@ -207,6 +236,7 @@ export default function NewCareerWizard() {
       if (nextStep > maxAchievedStep) {
         setMaxAchievedStep(nextStep);
       }
+      setErrors({});
     } else {
       // Logic for "Finish & Post" on the last step
       console.log("Finishing and posting career!");
@@ -216,6 +246,7 @@ export default function NewCareerWizard() {
   const handleBackStep = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
+      setErrors({});
     }
   };
 
@@ -305,6 +336,7 @@ export default function NewCareerWizard() {
           currentStep={currentStep}
           maxAchievedStep={maxAchievedStep}
           setStep={setCurrentStep}
+          errors={errors}
         />
       </div>
       {/* --- END: Centered pill header --- */}
@@ -382,4 +414,5 @@ export default function NewCareerWizard() {
 export interface CareerStepProps {
   careerData: CareerData;
   setCareerData: Dispatch<SetStateAction<CareerData>>;
+  errors?: Step1Errors;
 }

@@ -172,3 +172,60 @@ $spacing-lg: 2rem;
     }
   }
 }
+.checkIcon {
+  width: 12px;
+  height: 12px;
+}
+
+.errorIcon {
+  width: 24px !important;
+  height: 24px !important;
+}
+
+/* --- Completed State --- */
+/* When completed, show the check icon */
+.isDark:not(.isError) .checkIcon {
+  display: block;
+}
+/* and hide the dot */
+.isDark:not(.isError) .segmentedHeader__dot {
+  display: none;
+}
+
+/* --- Error State --- */
+.isError:not(.isDark) {
+  .segmentedHeader__title {
+    color: #d92d20;
+  }
+  .segmentedHeader__circle {
+    border-color: transparent;
+    background-color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  &.segmentedHeader__stepGroup:not(:last-child) .segmentedHeader__connector {
+    background-color: #d92d20;
+  }
+}
+
+/* --- THIS IS THE FIX ---
+  This handles the error when the step IS active or completed (i.e., it has both classes)
+*/
+.isError.isDark {
+  .segmentedHeader__title {
+    color: #d92d20 !important;
+  }
+
+  .segmentedHeader__circle {
+    border-color: transparent !important;
+    background-color: transparent !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &.segmentedHeader__stepGroup:not(:last-child) .segmentedHeader__connector {
+    background-color: #d92d20 !important;
+  }
+}
