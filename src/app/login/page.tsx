@@ -5,6 +5,7 @@ import { useEffect } from "react";
 export default function () {
   useEffect(() => {
     if (localStorage.user) {
+      console.log("Login Page Check - localStorage.role:", localStorage.role);
       if (localStorage.role === "admin") {
         window.location.href = "/recruiter-dashboard";
       } else {
