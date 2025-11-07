@@ -1,0 +1,279 @@
+/*
+  QuestionBuilder.scss
+  Styles for the new question builder card.
+  Make sure Step1_Details.scss is imported globally or in the parent.
+*/
+
+// --- 1. ADD THIS CLASS ---
+// This adds the 24px gap between each question card
+.question-builder-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem; // 24px
+}
+
+// Main container for one question (drag handle + card)
+.question-builder-container {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.75rem; // 12px
+  width: 100%;
+}
+
+// Drag handle on the left
+.question-drag-handle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 20px;
+  height: 36px; // Aligns with figma
+  cursor: grab;
+  color: #a4a7ae;
+
+  &:hover {
+    color: #414651;
+  }
+}
+
+// The main question card
+.question-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  border: 1px solid #e9eaeb;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden; // Ensures rounded corners
+}
+
+// Header section (Title + Type)
+.question-card-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem; // 16px
+  padding: 0.75rem 1rem; // 12px 16px
+  background: #f8f9fc;
+}
+
+.question-title-input {
+  flex: 1;
+  font-family: "Satoshi", sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: #414651;
+  border: 1px solid #e9eaeb;
+  border-radius: 8px;
+  padding: 10px 14px;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+
+  &::placeholder {
+    color: #717680;
+  }
+}
+
+// Custom select icon for the type dropdown
+.select-icon-prefix {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #717680;
+  pointer-events: none;
+}
+.select-wrapper {
+  select {
+    padding-left: 2.5rem; // Make space for the icon
+  }
+  svg {
+    // This is the down-arrow, from Step1_Details.scss
+    right: 14px !important;
+  }
+}
+
+// Body section (options or range)
+.question-card-body {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 1rem 1rem 3rem; // 16px, with 48px left padding
+  gap: 0.75rem; // 12px
+}
+
+.question-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem; // 12px
+  width: 100%;
+}
+
+.question-option-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem; // 12px
+}
+
+.question-option-number {
+  font-family: "Satoshi", sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  color: #181d27;
+  border: 1px solid #e9eaeb;
+  border-radius: 8px;
+  padding: 10px 14px;
+  min-width: 40px; // Aligns the inputs
+  text-align: center;
+}
+
+.question-option-input {
+  flex: 1;
+  font-family: "Satoshi", sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  color: #181d27;
+  border: 1px solid #e9eaeb;
+  border-radius: 8px;
+  padding: 10px 14px;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+  }
+}
+
+// Small "X" button for deleting an option
+.btn-icon-delete {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 28px;
+  height: 28px;
+  background: #fff;
+  border: 1px solid #d5d7da;
+  border-radius: 999px;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  color: #535862;
+  cursor: pointer;
+
+  &:hover {
+    background: #f8f9fc;
+  }
+}
+
+// "Add Option" button
+.btn-add-option {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem; // 8px
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px 14px;
+  font-family: "Satoshi", sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  color: #535862;
+  border-radius: 999px;
+  margin-left: 2.5rem; // Align with inputs
+
+  &:hover {
+    background: #f8f9fc;
+  }
+}
+
+// Range inputs (re-using salary styles)
+.question-range-inputs {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  padding-left: 2.5rem;
+  width: 100%; 
+
+  // --- 2. ADD THIS ---
+  // This makes the inputs shorter
+  .form-group {
+    flex: 1;
+  }
+
+  .salary-input-wrapper {
+    max-width: 250px; // Adjust this value as needed, 250px seems to match your screenshot
+    width: 100%;
+
+    &__suffix {
+      padding: 0.625rem 0.875rem;
+      font-weight: 500;
+      font-size: 1rem;
+      color: #181d27;
+      border-left: 1px solid #e9eaeb;
+    }
+  }
+}
+
+// Footer section (Delete Question)
+.question-card-footer {
+  display: flex;
+  // --- 3. CHANGE THIS ---
+  justify-content: flex-end; // Was 'center'
+  align-items: center;
+  padding: 1rem 0;
+  margin: 0 1rem 1rem 3rem; // Match body padding
+  border-top: 1px solid #eaecf5;
+}
+
+.btn-delete-question {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem; // 8px
+  padding: 8px 14px;
+  background: #ffffff;
+  border: 1px solid #fda29b;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 999px;
+  font-family: "Satoshi", sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  color: #b32318;
+  cursor: pointer;
+
+  &:hover {
+    background: #fefafa;
+  }
+}
+
+/*
+  --- Styles for Short/Long Answer Placeholders ---
+*/
+.question-answer-placeholder {
+  padding-left: 2.5rem; /* Aligns with the options list */
+  width: 100%;
+}
+
+.question-text-input,
+.question-textarea-input {
+  font-family: "Satoshi", sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  color: #717680;
+  border: 1px dashed #d5d7da; /* Dashed border to show it's a placeholder */
+  border-radius: 8px;
+  padding: 10px 14px;
+  background: #f8f9fc; /* Light gray background */
+  width: 100%;
+  box-sizing: border-box; /* Important for padding */
+  cursor: not-allowed;
+
+  &::placeholder {
+    color: #a4a7ae;
+  }
+}
+
+.question-textarea-input {
+  min-height: 80px;
+  resize: vertical;
+}

@@ -7,6 +7,7 @@ import { useState, Dispatch, SetStateAction } from "react";
 import SegmentedHeader from "./SegmentedHeader";
 // Import the component for the first step
 import Step1_Details from "../CareerSteps/Step1_Details";
+import Step2_CVReview from "../CareerSteps/Step2_CVReview";
 import {  errorToast } from "@/lib/Utils";
 
 // --- 1. ASSUMPTION: Import your toast function ---
@@ -230,6 +231,13 @@ export default function NewCareerWizard() {
             setCareerData={setCareerData}
           />
         );
+      case 2:
+        return (
+          <Step2_CVReview
+            careerData={careerData}
+            setCareerData={setCareerData}
+          />
+        );
       // case 2:
       //  return <Step2_CVReview careerData={careerData} setCareerData={setCareerData} />;
       // ... other steps
@@ -250,7 +258,13 @@ export default function NewCareerWizard() {
       <div style={{ marginBottom: "35px", display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: "100%", border: '1px solid #D5D7DA' }}>
         <h1 style={{ fontSize: "24px", fontWeight: 550, color: "#111827" }}>
           {draftId ? (
-            <span>[DRAFT] {careerData.jobTitle}</span>
+            <span>
+              {/* This span is ONLY for the grey text */}
+              <span style={{ color: "#6B7280" }}>[DRAFT] </span>
+              
+              {/* This text will be the default h1 color (black) */}
+              {careerData.jobTitle}
+            </span>
           ) : (
             "Add new career"
           )}
@@ -300,31 +314,65 @@ export default function NewCareerWizard() {
         {renderStep()}
 
         {/* Navigation buttons */}
-        <div className="flex justify-between mt-8 border-t pt-6">
-          <button
-            onClick={handleSaveDraft}
-            className="btn-secondary" // Use your app's CSS classes
-            disabled={isLoading}
-          >
-            {isLoading ? "Saving..." : "Save Draft"}
-          </button>
-          <div className="flex gap-4">
-            <button
-              onClick={handleBackStep}
-              className="btn-secondary"
-              disabled={currentStep === 1 || isLoading}
-            >
-              Back
-            </button>
-            <button
-              onClick={handleNextStep}
-              className="btn-primary" // Use your app's CSS classes
-              disabled={isLoading}
-            >
-              {currentStep === 5 ? "Finish & Post" : "Next"}
-            </button>
-          </div>
-        </div>
+
+    <div className="flex justify-end mt-8 border-t pt-6">
+      {/* "Save Draft" button removed */}
+      <div style={{ display: "flex", gap: "12px" }}>
+        {/* "Back" button (Grey Style) */}
+        <button
+          onClick={handleBackStep}
+          disabled={currentStep === 1 || isLoading}
+          style={{
+            width: "fit-content",
+            color: (currentStep === 1 || isLoading) ? "#9CA3AF" : "#414651",
+            background: "#fff",
+            border: "1px solid #D5D7DA",
+            padding: "10px 24px", // <-- MADE BIGGER
+            borderRadius: "60px",
+            cursor: (currentStep === 1 || isLoading) ? "not-allowed" : "pointer",
+            whiteSpace: "nowrap",
+            opacity: (currentStep === 1 || isLoading) ? 0.7 : 1,
+            transition: "all 0.2s",
+            fontSize: "15px", // <-- MADE BIGGER
+            fontWeight: "700" // <-- MADE BIGGER
+          }}
+        >
+          Back
+        </button>
+
+        {/* "Next / Finish" button (Black Style) */}
+        <button
+          onClick={handleNextStep}
+          disabled={isLoading}
+          style={{
+            width: "fit-content",
+            background: isLoading ? "#D5D7DA" : "black",
+            color: "#fff",
+            border: "1px solid",
+            borderColor: isLoading ? "#D5D7DA" : "black",
+            padding: "10px 24px", // <-- MADE BIGGER
+            borderRadius: "60px",
+            cursor: isLoading ? "not-allowed" : "pointer",
+            whiteSpace: "nowrap",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            transition: "all 0.2s",
+            fontSize: "15px", // <-- MADE BIGGER
+            fontWeight: "700" // <-- MADE BIGGER
+          }}
+        >
+          {currentStep === 5 ? "Finish & Post" : "Next"}
+          
+          {/* Conditional Icon */}
+          {currentStep === 5 ? (
+            <i className="la la-check-circle" style={{ color: "#fff", fontSize: 18 }}></i>
+          ) : (
+            <i className="la la-arrow-right" style={{ color: "#fff", fontSize: 16 }}></i>
+          )}
+        </button>
+      </div>
+    </div>
       </div>
     </div>
   );

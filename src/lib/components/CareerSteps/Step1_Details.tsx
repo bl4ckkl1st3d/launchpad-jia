@@ -382,6 +382,7 @@ export default function Step1_Details({
         <div className="card-block card-block--tips card-block--shadow-inner">
           {/* Card Header */}
           <div className="card-block__header">
+            <i className="la la-lightbulb gradient-icon"></i>
             <span className="card-block__title">Tips</span>
           </div>
           {/* Card Content */}

@@ -404,7 +404,7 @@ input[type="text"] {
   font-weight: 500;
   font-size: $font-size-sm;
   line-height: $line-height-sm;
-  color: $color-text-primary;
+  color: $color-text-secondary;
   
 }
 
@@ -444,4 +444,28 @@ input[type="text"] {
     // You might need to adjust this if 'dropdown-btn' is not the right class
     // from your CustomDropdown component.
   }
+}
+
+/* --- Gradient Icon Style --- */
+/* Based on the Figma design for tips_and_updates & auto_awesome */
+.gradient-icon {
+  font-size: 20px; /* Matches the 20x20px from Figma */
+  line-height: 1; /* Aligns the icon nicely */
+  display: inline-block; /* Ensures it behaves as an icon */
+
+  /* The gradient from your Figma spec */
+  background: linear-gradient(
+    45deg,
+    #fccdc0 0%,
+    #ebacc9 33%,
+    #ceb6da 66%,
+    #9fcaed 100%
+  );
+
+  /* This clips the background to the shape of the icon text */
+  -webkit-background-clip: text;
+  background-clip: text;
+
+  /* This makes the icon text transparent, revealing the gradient */
+  color: transparent;
 }
