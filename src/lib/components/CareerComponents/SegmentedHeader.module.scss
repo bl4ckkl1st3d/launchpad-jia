@@ -1,0 +1,122 @@
+/* * SegmentedHeader SASS Styles
+ * Based on the design spec and image_6979b6.png, with gradient connector.
+ */
+
+// --- Variables from Design Spec ---
+$color-dark: #181d27;
+$color-medium-grey: #717680;
+$color-light-grey: #d5d7da;
+$color-connector-light: #e9eaeb;
+$color-white: #ffffff;
+
+// Gradient colors from your provided image
+$gradient-start: #b1e0f0; // Light blue
+$gradient-mid: #e1b1e0; // Pink/purple
+$gradient-end: #f0c7b1; // Orange/peach
+
+$font-primary: 'Satoshi', sans-serif;
+$font-weight-bold: 700;
+$font-weight-medium: 500;
+$font-size-sm: 14px;
+$line-height-sm: 20px;
+
+// --- Component Styles ---
+
+.segmentedHeader {
+  padding: 1rem; // 16px
+  background-color: $color-white;
+  display: flex;
+  justify-content: center;
+
+  &__container {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  &__stepGroup {
+    display: flex;
+    align-items: flex-start;
+
+    &:last-child {
+      .segmentedHeader__connector {
+        display: none;
+      }
+    }
+  }
+
+  &__step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 95px;
+    border: none;
+    background: none;
+    padding: 0;
+    transition: opacity 0.2s ease;
+    cursor: not-allowed;
+    opacity: 0.7;
+
+    &.isClickable {
+      cursor: pointer;
+      opacity: 1;
+    }
+  }
+
+  &__circle {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+
+    background-color: $color-light-grey;
+    svg {
+      display: none;
+    }
+  }
+
+  &__title {
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    line-height: $line-height-sm;
+    text-align: center;
+    transition: color 0.2s ease, font-weight 0.2s ease;
+
+    color: $color-medium-grey;
+    font-weight: $font-weight-medium;
+  }
+
+  /* --- UPDATED CONNECTOR STYLE --- */
+  &__connector {
+    height: 4px;
+    min-width: 100px;
+    margin: 0 1rem;
+    margin-top: 8px;
+    transition: background-image 0.2s ease; // Transition the gradient
+
+    // Default (Future) state: light grey
+    background-image: linear-gradient(to right, $color-connector-light, $color-connector-light); // Solid color for future steps
+  }
+
+  /* Modifier for Active/Completed steps */
+  &__stepGroup.isDark {
+    .segmentedHeader__circle {
+      background-color: $color-dark;
+      svg {
+        display: block;
+      }
+    }
+    .segmentedHeader__title {
+      color: $color-dark;
+      font-weight: $font-weight-bold;
+    }
+    .segmentedHeader__connector {
+      // Apply the gradient for active/completed states
+      background-image: linear-gradient(to right, $gradient-start, $gradient-mid, $gradient-end);
+    }
+  }
+}
