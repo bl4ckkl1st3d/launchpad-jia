@@ -9,7 +9,7 @@ import SegmentedHeader from "./SegmentedHeader";
 import Step1_Details from "../CareerSteps/Step1_Details";
 import Step2_CVReview from "../CareerSteps/Step2_CVReview";
 import Step3_AIInterview from "../CareerSteps/Step3_AIInterview";
-
+import Step4_Review from "../CareerSteps/Step4_Review";
 import {  errorToast } from "@/lib/Utils";
 
 
@@ -291,42 +291,49 @@ const validateStep1 = () => {
 
 const renderStep = () => {
   switch (currentStep) {
-   case 1:
-    return (
-     <Step1_Details
-      careerData={careerData}
-      setCareerData={setCareerData}
-      errors={errors}
-     />
-    );
-   case 2:
-    return (
-     <Step2_CVReview
-      careerData={careerData}
-      setCareerData={setCareerData}
-      errors={errors}
-     />
-    );
-   case 3:
-    return (
-     <Step3_AIInterview
-      careerData={careerData}
-      setCareerData={setCareerData}
-     />
-    );
-   // case 2:
-   // return <Step2_CVReview careerData={careerData} setCareerData={setCareerData} />;
-   // ... other steps
-   default:
-    return (
-     <Step1_Details
-      careerData={careerData}
-      setCareerData={setCareerData}
-      errors={errors}
-     />
-    );
+    case 1:
+      return (
+        <Step1_Details
+          careerData={careerData}
+          setCareerData={setCareerData}
+          errors={errors}
+        />
+      );
+    case 2:
+      return (
+        <Step2_CVReview
+          careerData={careerData}
+          setCareerData={setCareerData}
+          errors={errors}
+        />
+      );
+    case 3:
+      return (
+        <Step3_AIInterview
+          careerData={careerData}
+          setCareerData={setCareerData}
+        />
+      );
+    case 4:
+      return (
+        <Step4_Review
+          careerData={careerData}
+          setCurrentStep={setCurrentStep} 
+        />
+      );
+    // case 2:
+    // return <Step2_CVReview careerData={careerData} setCareerData={setCareerData} />;
+    // ... other steps
+    default:
+      return (
+        <Step1_Details
+          careerData={careerData}
+          setCareerData={setCareerData}
+          errors={errors}
+        />
+      );
   }
- };
+};
 
   return (
     
