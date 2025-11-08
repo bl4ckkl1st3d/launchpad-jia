@@ -33,7 +33,8 @@ const allProvincesForDropdown = allProvincesOptions.map(p => ({
 export default function Step1_Details({
   careerData,
   setCareerData,
-}: CareerStepProps) { // 'errors' prop is gone
+  errors = {},
+}: CareerStepProps) {
   const [cities, setCities] = useState<DropdownOption[]>([]);
 
   // On initial load, set a default province and city if they are empty
@@ -163,6 +164,7 @@ export default function Step1_Details({
                     onChange={handleInputChange}
                     placeholder="Enter job title"
                   />
+                  {errors.jobTitle && <p style={{ color: '#D92D20', marginTop: '4px', fontSize: '12px' }}>{errors.jobTitle}</p>}
                 </div>
               </div>
 
@@ -201,6 +203,7 @@ export default function Step1_Details({
                         />
                       </svg>
                     </div>
+                    {errors.workSetup && <p style={{ color: '#D92D20', marginTop: '4px', fontSize: '12px' }}>{errors.workSetup}</p>}
                   </div>
                   {/* Employment Type Dropdown */}
                   <div className="form-group form-group--flex">
@@ -234,6 +237,7 @@ export default function Step1_Details({
                         />
                       </svg>
                     </div>
+                    {errors.employmentType && <p style={{ color: '#D92D20', marginTop: '4px', fontSize: '12px' }}>{errors.employmentType}</p>}
                   </div>
                 </div>
               </div>
@@ -280,6 +284,7 @@ export default function Step1_Details({
                       }
                       placeholder="Select province"
                     />
+                    {errors.province && <p style={{ color: '#D92D20', marginTop: '4px', fontSize: '12px' }}>{errors.province}</p>}
                   </div>
                   {/* City Dropdown */}
                   <div className="form-group form-group--flex">
@@ -293,6 +298,7 @@ export default function Step1_Details({
                       placeholder="Select city"
                       disabled={!careerData.province || cities.length === 0}
                     />
+                    {errors.city && <p style={{ color: '#D92D20', marginTop: '4px', fontSize: '12px' }}>{errors.city}</p>}
                   </div>
                 </div>
               </div>
@@ -338,6 +344,7 @@ export default function Step1_Details({
                         placeholder="e.g., 20,000"
                       />
                     </div>
+                    {errors.minimumSalary && <p style={{ color: '#D92D20', marginTop: '4px', fontSize: '12px' }}>{errors.minimumSalary}</p>}
                   </div>
                   {/* Maximum Salary */}
                   <div className="form-group form-group--flex">
@@ -355,6 +362,7 @@ export default function Step1_Details({
                         placeholder="e.g., 30,000"
                       />
                     </div>
+                    {errors.maximumSalary && <p style={{ color: '#D92D20', marginTop: '4px', fontSize: '12px' }}>{errors.maximumSalary}</p>}
                   </div>
                 </div>
               </div>
@@ -373,6 +381,7 @@ export default function Step1_Details({
               setText={handleDescriptionChange}
               text={careerData.description}
             />
+            {errors.description && <p style={{ color: '#D92D20', marginTop: '4px', fontSize: '12px' }}>{errors.description}</p>}
           </div>
         </div>
       </div>

@@ -2,19 +2,16 @@
 
 "use client";
 
-import { useState, Dispatch, SetStateAction } from "react";
+import { useState, Dispatch, SetStateAction, useEffect } from "react";
 // Import the pill-style header you requested
 import SegmentedHeader from "./SegmentedHeader";
 // Import the component for the first step
 import Step1_Details from "../CareerSteps/Step1_Details";
 import Step2_CVReview from "../CareerSteps/Step2_CVReview";
+import Step3_AIInterview from "../CareerSteps/Step3_AIInterview";
+
 import {  errorToast } from "@/lib/Utils";
 
-// --- 1. ASSUMPTION: Import your toast function ---
-// Make sure to import your errorToast function
-// import { errorToast } from "@/lib/utils/toasts";
-
-// MOCK FUNCTION: Remove this if you have a real errorToast
 
 // We create a new, comprehensive interface for all steps
 export interface CareerData {
@@ -69,13 +66,29 @@ export interface Step1Errors {
   minimumSalary?: string;
   maximumSalary?: string;
 }
+
+export interface Step2Errors {
+  workSetupRemarks?: string;
+  [key: string]: string | undefined; // For dynamic question IDs
+}
+
+export type WizardErrors = Step1Errors & Step2Errors;
+
 export default function NewCareerWizard() {
   const [currentStep, setCurrentStep] = useState(1);
   const [maxAchievedStep, setMaxAchievedStep] = useState(1);
   const [careerData, setCareerData] = useState<CareerData>(initialCareerData);
   const [draftId, setDraftId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState<Step1Errors>({});
+  const [errors, setErrors] = useState<WizardErrors>({});
+
+  useEffect(() => {
+    if (currentStep === 1) {
+      validateStep1();
+    } else if (currentStep === 2) {
+      validateStep2();
+    }
+  }, [careerData, currentStep]);
 
   // You will move your saveCareer and updateCareer logic here
   // and adapt it for the draft/next-step flow.
@@ -117,70 +130,96 @@ const validateStep1 = () => {
       maximumSalary,
     } = careerData;
 
-    const newErrors: Step1Errors = {};
-    let hasError = false;
-
-    const toastError = (message: string) => {
-      if (!hasError) { // Only show toast for the first error
-        errorToast(message, 1300);
-      }
-      hasError = true;
-    };
+    const step1Errors: Step1Errors = {};
 
     if (!jobTitle || jobTitle.trim().length === 0) {
-      newErrors.jobTitle = "This is a required field";
-      toastError("Job title is a required field");
+      step1Errors.jobTitle = "This is a required field";
     }
     if (!workSetup || workSetup.trim().length === 0) {
-      newErrors.workSetup = "This is a required field";
-      toastError("Location Type (Work Setup) is required");
+      step1Errors.workSetup = "This is a required field";
     }
     if (!employmentType || employmentType.trim().length === 0) {
-      newErrors.employmentType = "This is a required field";
-      toastError("Employment Type is required");
+      step1Errors.employmentType = "This is a required field";
     }
     if (!province || province.trim().length === 0) {
-      newErrors.province = "This is a required field";
-      toastError("State/Province is required");
+      step1Errors.province = "This is a required field";
     }
     if (!city || city.trim().length === 0) {
-      newErrors.city = "This is a required field";
-      toastError("City is required");
+      step1Errors.city = "This is a required field";
     }
     if (!description || description.trim().length === 0) {
-      newErrors.description = "This is a required field";
-      toastError("Job Description is required");
+      step1Errors.description = "This is a required field";
     }
 
     // Salary checks
-    if (!salaryNegotiable) {
-      if (!minimumSalary) {
-        newErrors.minimumSalary = "This is a required field";
-        toastError("Minimum salary is required");
+
+      const minIsMissing = !minimumSalary;
+      const maxIsMissing = !maximumSalary;
+
+      if (minIsMissing) {
+        step1Errors.minimumSalary = "This is a required field";
       }
-      if (!maximumSalary) {
-        newErrors.maximumSalary = "This is a required field";
-        toastError("Maximum salary is required");
+      if (maxIsMissing) {
+        step1Errors.maximumSalary = "This is a required field";
       }
-    }
+      
+      // Only if NEITHER is missing, check the comparison
+      if (!minIsMissing && !maxIsMissing) {
+        if (Number(minimumSalary) > Number(maximumSalary)) {
+            step1Errors.minimumSalary = "Minimum salary cannot be greater than maximum salary";
+            step1Errors.maximumSalary = "Maximum salary cannot be less than minimum salary";
+        }
+      }
     
-    // Check if min > max, but only if both are valid numbers
-    if (
-      Number(minimumSalary) &&
-      Number(maximumSalary) &&
-      Number(minimumSalary) > Number(maximumSalary)
-    ) {
-      newErrors.minimumSalary = "Min > Max";
-      newErrors.maximumSalary = "Min > Max";
-      toastError("Minimum salary cannot be greater than maximum salary");
+    setErrors(prev => {
+      const newErrors = { ...prev };
+      const step1ErrorKeys = [
+        "jobTitle", "description", "workSetup", "employmentType", 
+        "province", "city", "minimumSalary", "maximumSalary"
+      ];
+      
+      step1ErrorKeys.forEach(key => {
+        delete newErrors[key];
+      });
+
+      return { ...newErrors, ...step1Errors };
+    });
+    
+    return Object.keys(step1Errors).length === 0;
+  };
+
+  const validateStep2 = () => {
+    const { workSetupRemarks, questions } = careerData;
+    const step2Errors: Step2Errors = {};
+
+    if (!workSetupRemarks || workSetupRemarks.trim().length === 0) {
+      step2Errors.workSetupRemarks = "AI custom instructions cannot be empty.";
     }
 
-    // --- THIS IS THE CRITICAL FIX ---
-    // Save the new errors object to the component's state
-    setErrors(newErrors);
-    
-    // Return true if no errors were found
-    return !hasError;
+    const questionsList = questions[0]?.questions || [];
+    questionsList.forEach(q => {
+      if (!q.title || q.title.trim().length === 0) {
+        step2Errors[q.id] = "Question title cannot be empty.";
+      }
+    });
+
+    // We only want to set errors for Step 2, preserving Step 1 errors
+    setErrors(prev => {
+      // Create a copy of previous errors
+      const newErrors = { ...prev };
+      
+      // Remove old Step 2 errors
+      Object.keys(newErrors).forEach(key => {
+        if (key === 'workSetupRemarks' || key.startsWith('q_') || key.startsWith('custom_')) {
+          delete newErrors[key];
+        }
+      });
+
+      // Add new Step 2 errors
+      return { ...newErrors, ...step2Errors };
+    });
+
+    return Object.keys(step2Errors).length === 0;
   };
   
   /**
@@ -215,10 +254,9 @@ const validateStep1 = () => {
     let isValid = true;
     if (currentStep === 1) {
       isValid = validateStep1();
+    } else if (currentStep === 2) {
+      isValid = validateStep2();
     }
-    // else if (currentStep === 2) {
-    //   isValid = validateStep2(); // etc.
-    // }
 
     // --- 2. If not valid, stop here. The toast was already shown. ---
     if (!isValid) {
@@ -250,41 +288,49 @@ const validateStep1 = () => {
     }
   };
 
-  /**
-   * --- UPDATED: 'errors' prop removed ---
-   */
-  const renderStep = () => {
-    switch (currentStep) {
-      case 1:
-        return (
-          <Step1_Details
-            careerData={careerData}
-            setCareerData={setCareerData}
-          />
-        );
-      case 2:
-        return (
-          <Step2_CVReview
-            careerData={careerData}
-            setCareerData={setCareerData}
-          />
-        );
-      // case 2:
-      //  return <Step2_CVReview careerData={careerData} setCareerData={setCareerData} />;
-      // ... other steps
-      default:
-        return (
-          <Step1_Details
-            careerData={careerData}
-            setCareerData={setCareerData}
-          />
-        );
-    }
-  };
+
+const renderStep = () => {
+  switch (currentStep) {
+   case 1:
+    return (
+     <Step1_Details
+      careerData={careerData}
+      setCareerData={setCareerData}
+      errors={errors}
+     />
+    );
+   case 2:
+    return (
+     <Step2_CVReview
+      careerData={careerData}
+      setCareerData={setCareerData}
+      errors={errors}
+     />
+    );
+   case 3:
+    return (
+     <Step3_AIInterview
+      careerData={careerData}
+      setCareerData={setCareerData}
+     />
+    );
+   // case 2:
+   // return <Step2_CVReview careerData={careerData} setCareerData={setCareerData} />;
+   // ... other steps
+   default:
+    return (
+     <Step1_Details
+      careerData={careerData}
+      setCareerData={setCareerData}
+      errors={errors}
+     />
+    );
+  }
+ };
 
   return (
     
-    <div className="new-career-wizard" style={{ border: '1px solid #D5D7DA', width: "100%" }}>
+    <div className="new-career-wizard" style={{  width: "100%" }}>
       {/* --- START: Your new header block --- */}
       <div style={{ marginBottom: "35px", display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: "100%", border: '1px solid #D5D7DA' }}>
         <h1 style={{ fontSize: "24px", fontWeight: 550, color: "#111827" }}>
@@ -375,16 +421,16 @@ const validateStep1 = () => {
         {/* "Next / Finish" button (Black Style) */}
         <button
           onClick={handleNextStep}
-          disabled={isLoading}
+          disabled={isLoading || Object.keys(errors).length > 0}
           style={{
             width: "fit-content",
-            background: isLoading ? "#D5D7DA" : "black",
+            background: (isLoading || Object.keys(errors).length > 0) ? "#D5D7DA" : "black",
             color: "#fff",
             border: "1px solid",
-            borderColor: isLoading ? "#D5D7DA" : "black",
+            borderColor: (isLoading || Object.keys(errors).length > 0) ? "#D5D7DA" : "black",
             padding: "10px 24px", // <-- MADE BIGGER
             borderRadius: "60px",
-            cursor: isLoading ? "not-allowed" : "pointer",
+            cursor: (isLoading || Object.keys(errors).length > 0) ? "not-allowed" : "pointer",
             whiteSpace: "nowrap",
             display: "flex",
             alignItems: "center",
@@ -413,6 +459,6 @@ const validateStep1 = () => {
 // --- UPDATED: 'errors' prop removed ---
 export interface CareerStepProps {
   careerData: CareerData;
-  setCareerData: Dispatch<SetStateAction<CareerData>>;
-  errors?: Step1Errors;
+  setCareerData: Dispatch<SetStateAction<CareerData>>; 
+  errors?: WizardErrors;
 }

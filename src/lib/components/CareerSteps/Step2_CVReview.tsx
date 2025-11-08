@@ -1,7 +1,7 @@
 // src/lib/components/CareerSteps/Step2_CVReview.tsx
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CareerStepProps } from "../CareerComponents/NewCareerWizard";
 import CustomDropdown from "../CareerComponents/CustomDropdown";
 // --- 1. Import the new QuestionBuilder component ---
@@ -65,10 +65,10 @@ const initialSuggestedQuestions = [
 export default function Step2_CVReview({
   careerData,
   setCareerData,
+  errors = {},
 }: CareerStepProps) {
 
-  // --- 3. Manage local state for suggestions ---
-  // We need this to show "Added" for suggested questions
+
   const [suggestedQuestions, setSuggestedQuestions] = useState(
     initialSuggestedQuestions
   );
@@ -86,7 +86,8 @@ export default function Step2_CVReview({
   const handleInstructionsChange = (
     e: React.ChangeEvent<HTMLTextAreaElement>,
   ) => {
-    setCareerData(prev => ({ ...prev, workSetupRemarks: e.target.value }));
+    const value = e.target.value;
+    setCareerData(prev => ({ ...prev, workSetupRemarks: value }));
   };
 
   // --- 5. New Question Handlers ---
@@ -184,6 +185,13 @@ export default function Step2_CVReview({
                 onChange={handleInstructionsChange}
                 rows={5}
               />
+              {errors.workSetupRemarks && (
+                <p
+                  style={{ color: "#f00", marginTop: "5px", fontSize: "14px" }}
+                >
+                  {errors.workSetupRemarks}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -205,12 +213,18 @@ export default function Step2_CVReview({
             {/* --- 6. Render the list of added questions --- */}
             <div className="question-builder-list">
               {questionsList.map(question => (
-                <QuestionBuilder 
-                  key={question.id}
-                  initialQuestion={question}
-                  onUpdate={handleUpdateQuestion}
-                  onDelete={handleDeleteQuestion}
-                />
+                <div key={question.id} className="question-item-wrapper">
+                  <QuestionBuilder
+                    initialQuestion={question}
+                    onUpdate={handleUpdateQuestion}
+                    onDelete={handleDeleteQuestion}
+                  />
+                  {errors[question.id] && (
+                    <p style={{ color: '#f00', marginTop: '5px', fontSize: '14px' }}>
+                      {errors[question.id]}
+                    </p>
+                  )}
+                </div>
               ))}
             </div>
 

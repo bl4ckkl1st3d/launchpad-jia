@@ -55,7 +55,6 @@ const steps = [
   "Career Details",
   "CV Review",
   "AI Interview",
-  "Pipeline",
   "Review Career",
 ];
 
@@ -67,12 +66,28 @@ export default function SegmentedHeader({
 }: SegmentedHeaderProps) {
   // --- Helper to check for errors on a step ---
   const hasErrorOnStep = (stepNumber: number) => {
-    // This logic only checks for Step 1 errors.
-    // You can expand this as you build validation for other steps.
-    if (stepNumber === 1 && errors && Object.keys(errors).length > 0) {
-      return true;
+    const errorKeys = Object.keys(errors);
+    if (errorKeys.length === 0) return false;
+
+    if (stepNumber === 1) {
+      // Step 1 error keys
+      const step1ErrorKeys = [
+        "jobTitle",
+        "description",
+        "workSetup",
+        "employmentType",
+        "province",
+        "city",
+        "minimumSalary",
+        "maximumSalary",
+      ];
+      return errorKeys.some(key => step1ErrorKeys.includes(key));
+    } else if (stepNumber === 2) {
+      // Step 2 error keys
+      return errorKeys.some(key => 
+        key === 'workSetupRemarks' || key.startsWith('q_') || key.startsWith('custom_')
+      );
     }
-    // else if (stepNumber === 2 && errors.someOtherCheck) { ... }
     return false;
   };
 
