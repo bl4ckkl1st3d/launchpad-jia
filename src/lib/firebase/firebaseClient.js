@@ -41,178 +41,161 @@ export async function signInWithGoogle(type) {
   }
 
   const profile = res.additionalUserInfo.profile;
+
   loadingToast("Logging in...");
 
   localStorage.authToken = res.user._delegate.accessToken;
 
-  // 1. CALL THE AUTH API
-  let authResponse;
-  try {
-    authResponse = await axios.post("/api/auth", {
+  localStorage.user = JSON.stringify({
+    email: profile.email,
+    image: profile.picture,
+    name: profile.name,
+    role: type,
+  });
+
+  axios
+    .post("/api/auth", {
       name: profile.name,
       email: profile.email,
       image: profile.picture,
-    });
-  } catch (error) {
-    console.error("Google login error", error);
-    errorToast("Google login failed");
-    toast.dismiss("loading-toast");
-    return;
-  }
+    })
+    .then(async (res) => {
+      if (
+        res.data.error &&
+        profile.email.split("@")[1] !== "whitecloak.com" &&
+        !profile.email.split("@")[1].includes("shae")
+      ) {
+        errorToast(res.data.error);
+        console.log(res.data);
+      }
 
-  toast.dismiss("loading-toast");
-  successToast("Login successful");
+      toast.dismiss("loading-toast");
 
-  // 2. GET THE USER DATA AND ROLE FROM THE API RESPONSE
-  const userData = authResponse.data;
-  const userRole = userData.role;
+      successToast("Login successful");
 
-  // 3. SAVE THE *REAL* USER AND ROLE TO LOCALSTORAGE
-  localStorage.user = JSON.stringify(userData);
-  localStorage.role = userRole;
+      const host = window.location.host;
 
-  const host = window.location.host;
+      if (
+        (host.includes("localhost") || host.includes("hirejia.ai")) &&
+        res.data.role == "applicant"
+      ) {
+        Swal.fire({
+          title: "No Account Found",
+          text: `There's no employer account associated with your login ${res.data.email}.`,
+          icon: "warning",
+          showCancelButton: true, // second button
+          confirmButtonText: "OK",
+          cancelButtonText: "I'm a job seeker",
+          customClass: {
+            title: styles.swalTitle,
+            icon: styles.swalIcon,
+            confirmButton: styles.swalConfirmButton,
+            cancelButton: styles.swalCancelButton,
+            htmlContainer: styles.swalDescription,
+            popup: styles.swalContainer,
+            actions: styles.swalAction,
+          },
+        }).then((result) => {
+          if (result.isConfirmed) {
+            Swal.close();
+          } else if (result.dismiss === Swal.DismissReason.cancel) {
+            window.location.href = host.includes("localhost")
+              ? "/job-portal"
+              : "https://www.hellojia.ai";
+          }
+        });
 
-  // 4. CHECK FOR APPLICANT TRYING TO LOG INTO EMPLOYER PORTAL
-  if (
-    (host.includes("localhost") || host.includes("hirejia.ai")) &&
-    userRole === "applicant"
-  ) {
-    Swal.fire({
-      title: "No Account Found",
-      text: `There's no employer account associated with your login ${userData.email}.`,
-      icon: "warning",
-      showCancelButton: true, // second button
-      confirmButtonText: "OK",
-      cancelButtonText: "I'm a job seeker",
-      customClass: {
-        title: styles.swalTitle,
-        icon: styles.swalIcon,
-        confirmButton: styles.swalConfirmButton,
-        cancelButton: styles.swalCancelButton,
-        htmlContainer: styles.swalDescription,
-        popup: styles.swalContainer,
-        actions: styles.swalAction,
-      },
-    }).then((result) => {
-      if (result.isConfirmed) {
-        Swal.close();
-      } else if (result.dismiss === Swal.DismissReason.cancel) {
-        window.location.href = host.includes("localhost")
+        localStorage.removeItem("user");
+        return false;
+      }
+
+      // handle direct interview link redirects
+      if (window.location.search.includes("?directInterviewID")) {
+        let directInterviewID = window.location.search.split(
+          "?directInterviewID="
+        )[1];
+
+        if (directInterviewID) {
+          window.location.href = `/direct-interview/${directInterviewID}`;
+        }
+
+        return false;
+      }
+
+      if (type === "whitecloak-careers") {
+        if (sessionStorage.redirectionPath) {
+          const redirectionPath = sessionStorage.getItem("redirectionPath");
+          sessionStorage.removeItem("redirectionPath");
+          window.location.href = redirectionPath;
+        } else {
+          window.location.href = "/whitecloak/applicant";
+        }
+        return false;
+      }
+
+      if (type === "job-portal") {
+        if (sessionStorage.redirectionPath) {
+          const redirectionPath = sessionStorage.getItem("redirectionPath");
+          sessionStorage.removeItem("redirectionPath");
+          window.location.href = redirectionPath;
+        } else {
+          window.location.href = "/dashboard";
+        }
+        return false;
+      }
+
+      // maintain flow
+      if (window.location.search.includes("?redirect=")) {
+        let redirect = window.location.search.split("?redirect=")[1];
+
+        if (redirect) {
+          window.location.href = redirect;
+        }
+
+        return false;
+      }
+
+      if (host.startsWith("admin.hirejia.ai")) {
+        localStorage.role = "admin";
+        window.location.href = "/admin-portal";
+        return;
+      }
+
+      let orgData = await axios.post("/api/get-org", {
+        user: profile,
+      });
+
+      if (orgData.data.length == 0) {
+        localStorage.role = "applicant";
+        window.location.href = window.location.origin.includes("localhost")
           ? "/job-portal"
           : "https://www.hellojia.ai";
+        return;
       }
+
+      if (orgData.data.length > 0) {
+        localStorage.role = "admin";
+        const activeOrg = localStorage.activeOrg;
+
+        localStorage.activeOrg = activeOrg
+          ? activeOrg
+          : JSON.stringify(orgData.data[0]);
+        localStorage.orgList = JSON.stringify(orgData.data);
+
+        const parsedActiveOrg = JSON.parse(localStorage.activeOrg);
+
+        if (parsedActiveOrg.role == "hiring_manager") {
+          window.location.href = `/recruiter-dashboard/careers?orgID=${parsedActiveOrg._id}`;
+        } else {
+          window.location.href = `/recruiter-dashboard?orgID=${parsedActiveOrg._id}`;
+        }
+      }
+    })
+    .catch((error) => {
+      console.error("Google login error", error);
+      errorToast("Google login failed");
+      toast.dismiss("loading-toast");
     });
-
-    localStorage.removeItem("user");
-    localStorage.removeItem("role"); 
-    return false;
-  }
-
-  // 5. HANDLE ADMIN/RECRUITER ROLES
-  if (userRole === "admin" || userRole === "hiring_manager") {
-    
-    // Check for orgs
-    let orgData = await axios.post("/api/get-org", {
-      user: userData, 
-    });
-
-    if (orgData.data.length == 0) {
-      // Admin user has no organization.
-      // This will cause an "Invalid Access" error in AuthGuard, which is correct.
-      // You MUST add this user to the 'members' collection in your database.
-      errorToast("Admin account is not associated with an organization.", 3000);
-      window.location.href = "/recruiter-dashboard"; // Go to dashboard to be handled by AuthGuard
-      return;
-    }
-
-    if (orgData.data.length > 0) {
-      // *** FIX IS HERE ***
-      // Check for a stale or invalid "null" value in localStorage
-      let currentActiveOrg = null;
-      try {
-        currentActiveOrg = JSON.parse(localStorage.activeOrg);
-      } catch (e) {
-        currentActiveOrg = null;
-      }
-      
-      const newActiveOrg = currentActiveOrg ? currentActiveOrg : orgData.data[0];
-
-      localStorage.activeOrg = JSON.stringify(newActiveOrg);
-      localStorage.orgList = JSON.stringify(orgData.data);
-      
-      if (newActiveOrg.role == "hiring_manager") {
-        window.location.href = `/recruiter-dashboard/careers?orgID=${newActiveOrg._id}`;
-      } else {
-        window.location.href = `/recruiter-dashboard?orgID=${newActiveOrg._id}`;
-      }
-    }
-    return; // Done
-  }
-
-  // 6. HANDLE ALL OTHER REDIRECTS (like applicants, whitecloak, etc.)
-  
-  // ... (rest of the redirect logic remains the same) ...
-
-  // handle direct interview link redirects
-  if (window.location.search.includes("?directInterviewID")) {
-    let directInterviewID = window.location.search.split(
-      "?directInterviewID="
-    )[1];
-    if (directInterviewID) {
-      window.location.href = `/direct-interview/${directInterviewID}`;
-    }
-    return false;
-  }
-
-  if (type === "whitecloak-careers") {
-    if (sessionStorage.redirectionPath) {
-      const redirectionPath = sessionStorage.getItem("redirectionPath");
-      sessionStorage.removeItem("redirectionPath");
-      window.location.href = redirectionPath;
-    } else {
-      window.location.href = "/whitecloak/applicant";
-    }
-    return false;
-  }
-
-  if (type === "job-portal") {
-    if (sessionStorage.redirectionPath) {
-      const redirectionPath = sessionStorage.getItem("redirectionPath");
-      sessionStorage.removeItem("redirectionPath");
-      window.location.href = redirectionPath;
-    } else {
-      window.location.href = "/dashboard";
-    }
-    return false;
-  }
-
-  // maintain flow
-  if (window.location.search.includes("?redirect=")) {
-    let redirect = window.location.search.split("?redirect=")[1];
-    if (redirect) {
-      window.location.href = redirect;
-    }
-    return false;
-  }
-
-  if (host.startsWith("admin.hirejia.ai")) {
-    // This logic is now handled in step 5, but we can keep it as a fallback
-    window.location.href = "/admin-portal";
-    return;
-  }
-
-  // DEFAULT FALLBACK FOR APPLICANTS
-  if (userRole === "applicant") {
-    window.location.href = window.location.origin.includes("localhost")
-      ? "/job-portal"
-      : "https://www.hellojia.ai";
-    return;
-  }
-
-  // Final fallback
-  console.log("Login complete, but no redirect rule matched. Defaulting to /");
-  window.location.href = "/";
 }
 
 export function signInWithMicrosoft() {

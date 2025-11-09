@@ -18,9 +18,6 @@ export default function AuthGuard() {
 
   useEffect(() => {
     async function fetchOrg() {
-      // DEBUG LOG
-      console.log("[AuthGuard] fetchOrg() started.");
-
       const userData = JSON.parse(localStorage.user);
       const org = await axios.post("/api/get-org", {
         user: userData,
@@ -77,32 +74,21 @@ export default function AuthGuard() {
             }, 1500);
             return;
           }
-          // DEBUG LOG
-          console.log("[AuthGuard] Setting activeOrg as SuperAdmin:", orgDetails.data);
           setActiveOrg(orgDetails.data);
         }
 
         if (foundOrg) {
-          // DEBUG LOG
-          console.log("[AuthGuard] Setting activeOrg from foundOrg:", foundOrg);
           setActiveOrg(foundOrg);
         }
       }
 
       if (!activeOrg) {
-        // DEBUG LOG
-        console.log("[AuthGuard] No activeOrg found, setting from orgList[0]:", orgList[0]);
         setActiveOrg(orgList[0]);
       }
-
-      // DEBUG LOG
-      console.log("[AuthGuard] Checking permissions for activeOrg:", activeOrg);
 
       if (activeOrg) {
         if (!userData.email.includes("@whitecloak.com")) {
           if (pathname.includes("/settings")) {
-            // DEBUG LOG
-            console.log("[AuthGuard] Unauthorized: Non-Whitecloak email trying to access settings.");
             errorToast("You are not authorized to access this page", 1500);
             setTimeout(() => {
               window.location.href = "/recruiter-dashboard/careers";
@@ -111,8 +97,6 @@ export default function AuthGuard() {
           }
         }
 
-        // DEBUG LOG
-        console.log(`[AuthGuard] Active Org Role: ${activeOrg.role}`);
         if (activeOrg.role == "hiring_manager") {
           const allowedPaths = [
             "/dashboard/careers",
@@ -125,8 +109,6 @@ export default function AuthGuard() {
           ];
 
           if (!allowedPaths.some((path) => pathname.includes(path))) {
-            // DEBUG LOG
-            console.log(`[AuthGuard] Unauthorized: hiring_manager trying to access ${pathname}.`);
             errorToast("You are not authorized to access this page", 1500);
             setTimeout(() => {
               window.location.href = "/recruiter-dashboard/careers";
@@ -142,8 +124,6 @@ export default function AuthGuard() {
           }
         });
         if (orgDetails.data.status === "inactive") {
-          // DEBUG LOG
-          console.log("[AuthGuard] Unauthorized: Organization is inactive.");
           clearUserSession();
           errorToast("Your organization is inactive", 1500);
           setTimeout(() => {
@@ -153,8 +133,6 @@ export default function AuthGuard() {
         }
       }
 
-      // DEBUG LOG
-      console.log("[AuthGuard] All checks passed. Unblocking page.");
       setBlocked(false);
     }
 
@@ -173,11 +151,7 @@ export default function AuthGuard() {
       try {
         const userData = JSON.parse(localStorage.user);
         const role = localStorage.role;
-        
-        // DEBUG LOG
-        console.log(`[AuthGuard] User found. Role: ${role}, Path: ${window.location.pathname}`);
 
-        // *** BUG FIX APPLIED HERE ***
         if (role === "admin") {
           if (window.location.pathname.includes("applicant")) {
             fetchCV(userData.email);
@@ -199,8 +173,6 @@ export default function AuthGuard() {
           }
 
           if (window.location.pathname.includes("dashboard")) {
-            // DEBUG LOG
-            console.log("[AuthGuard] Unauthorized: Applicant trying to access dashboard.");
             errorToast("You are not authorized to access this page", 1500);
             setTimeout(() => {
               window.location.href = '/';
