@@ -1,5 +1,6 @@
 // src/lib/components/CareerSteps/Step3_AIInterview.tsx
 import React from 'react';
+import { CareerStepProps } from '../CareerComponents/NewCareerWizard';
 
 // Import the CustomDropdown component
 import CustomDropdown from '../CareerComponents/CustomDropdown'; 
@@ -18,12 +19,7 @@ const screeningOptions = [
   { name: "No Automatic Promotion", icon: "la la-times" },
 ];
 
-interface Step3Props {
-  careerData: any;
-  setCareerData: (data: any) => void;
-}
-
-const Step3_AIInterview: React.FC<Step3Props> = ({ careerData, setCareerData }) => {
+const Step3_AIInterview: React.FC<CareerStepProps> = ({ careerData, setCareerData, errors }) => {
   
   const handleScreeningChange = (selectedName: string) => {
     setCareerData(prev => ({ ...prev, screeningSetting: selectedName }));
@@ -143,6 +139,7 @@ const Step3_AIInterview: React.FC<Step3Props> = ({ careerData, setCareerData }) 
                 <p className="form-section__description">
                   Add your own questions to the interview. Jia will ask these after the standard questions.
                 </p>
+                {errors?.customInterviewQuestions && <p style={{ color: 'red', marginTop: '10px' }}>{errors.customInterviewQuestions}</p>}
               </div>
               <div className="form-group">
                 {/* --- Using the NEW component --- */}
@@ -150,7 +147,8 @@ const Step3_AIInterview: React.FC<Step3Props> = ({ careerData, setCareerData }) 
                   customQuestions={careerData.customInterviewQuestions || []}
                   setCustomQuestions={handleCustomQuestionsChange}
                   jobDescription={careerData.jobDescription || ''}
-                  orgId={careerData.orgId || ''} 
+                  orgId={careerData.orgId || ''}
+                  errors={errors}
                 />
               </div>
             </div>

@@ -6,3 +6,4 @@ node_modules/
 !.env.example
 bun.lock
 next-env.d.ts
+instructions_for_CareersV2Table.txt

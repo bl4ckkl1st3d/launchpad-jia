@@ -87,6 +87,11 @@ export default function SegmentedHeader({
       return errorKeys.some(key => 
         key === 'workSetupRemarks' || key.startsWith('q_') || key.startsWith('custom_')
       );
+    } else if (stepNumber === 3) {
+      // Step 3 error keys
+      return errorKeys.some(key => 
+        key === 'customInterviewQuestions' || key.startsWith('customInterviewQuestion_')
+      );
     }
     return false;
   };

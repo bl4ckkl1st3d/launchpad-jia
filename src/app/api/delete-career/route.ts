@@ -15,7 +15,7 @@ export async function POST(request: Request) {
 
     const { db } = await connectMongoDB();
 
-    // Delete the career with the specified ID
+    // Delete the career from the unified careers collection
     const result = await db
       .collection("careers")
       .deleteOne({ _id: new ObjectId(id) });

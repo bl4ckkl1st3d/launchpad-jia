@@ -3,6 +3,7 @@
 "use client";
 
 import { useState, Dispatch, SetStateAction, useEffect } from "react";
+import axios from "axios";
 // Import the pill-style header you requested
 import SegmentedHeader from "./SegmentedHeader";
 // Import the component for the first step
@@ -10,11 +11,13 @@ import Step1_Details from "../CareerSteps/Step1_Details";
 import Step2_CVReview from "../CareerSteps/Step2_CVReview";
 import Step3_AIInterview from "../CareerSteps/Step3_AIInterview";
 import Step4_Review from "../CareerSteps/Step4_Review";
-import {  errorToast } from "@/lib/Utils";
+import { useAppContext } from "@/lib/context/AppContext";
+import { errorToast, candidateActionToast } from "@/lib/Utils";
 
 
 // We create a new, comprehensive interface for all steps
 export interface CareerData {
+  _id?: string;
   jobTitle: string;
   description: string;
   workSetup: string;
@@ -30,6 +33,7 @@ export interface CareerData {
   province: string;
   city: string;
   teamAccess: Array<{ email: string; name: string; role: "Owner" | "Member" }>;
+  customInterviewQuestions: any[];
 }
 
 // This is all the state from your old CareerForm.tsx, now in one place.
@@ -55,6 +59,7 @@ const initialCareerData: CareerData = {
   province: "",
   city: "",
   teamAccess: [], // Your new requested field
+  customInterviewQuestions: [],
 };
 export interface Step1Errors {
   jobTitle?: string;
@@ -72,9 +77,14 @@ export interface Step2Errors {
   [key: string]: string | undefined; // For dynamic question IDs
 }
 
-export type WizardErrors = Step1Errors & Step2Errors;
+export interface Step3Errors {
+  [key: string]: string | undefined;
+}
+
+export type WizardErrors = Step1Errors & Step2Errors & Step3Errors;
 
 export default function NewCareerWizard() {
+  const { user, orgID } = useAppContext();
   const [currentStep, setCurrentStep] = useState(1);
   const [maxAchievedStep, setMaxAchievedStep] = useState(1);
   const [careerData, setCareerData] = useState<CareerData>(initialCareerData);
@@ -87,37 +97,61 @@ export default function NewCareerWizard() {
       validateStep1();
     } else if (currentStep === 2) {
       validateStep2();
+    } else if (currentStep === 3) {
+      validateStep3();
     }
   }, [careerData, currentStep]);
 
-  // You will move your saveCareer and updateCareer logic here
-  // and adapt it for the draft/next-step flow.
-
   const handleSaveDraft = async () => {
     setIsLoading(true);
-    // ... logic from old saveCareer (formType="add") ...
-    // ... or logic from old updateCareer (formType="edit") if draftId exists ...
-    console.log("Saving draft:", careerData);
+    try {
+      const dataToSave = {
+        ...careerData,
+        _id: draftId,
+        minimumSalary: isNaN(Number(careerData.minimumSalary)) ? null : Number(careerData.minimumSalary),
+        maximumSalary: isNaN(Number(careerData.maximumSalary)) ? null : Number(careerData.maximumSalary),
+      };
+      const payload = {
+        careerData: dataToSave,
+        orgID,
+        user: { image: user.image, name: user.name, email: user.email },
+      };
 
-    // MOCK API CALL
-    return new Promise(resolve => {
-      setTimeout(() => {
-        if (!draftId) setDraftId("mock-draft-id-123"); // Set a draft ID after first save
-        setIsLoading(false);
-        console.log("Draft saved!");
-        resolve(true);
-      }, 1000);
-    });
+      console.log("Attempting to save draft with payload:", JSON.stringify(payload, null, 2));
+
+      const response = await axios.put("/api/career-data", payload);
+
+      if (response.data.success) {
+        if (!draftId) {
+          setDraftId(response.data.id);
+          // Update careerData with the new ID without triggering a re-render loop
+          setCareerData(prev => ({...prev, _id: response.data.id})); 
+        }
+        console.log("Draft saved successfully!", response.data);
+      } else {
+        console.error("Draft save was not successful:", response.data);
+      }
+    } catch (error) {
+      console.error("An error occurred while saving the draft.");
+      if (axios.isAxiosError(error)) {
+        console.error("Axios error:", error.message);
+        if (error.response) {
+          console.error("Error response data:", error.response.data);
+          console.error("Error response status:", error.response.status);
+          console.error("Error response headers:", error.response.headers);
+        } else if (error.request) {
+          console.error("Error request:", error.request);
+        }
+      } else {
+        console.error("Non-Axios error:", error);
+      }
+      errorToast("Failed to save draft", 1500);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  /**
-   * --- ADDED: This is the single validation function ---
-   * It checks all required fields for Step 1 and shows toasts.
-   * It returns 'true' if valid, 'false' if an error is found.
-   */
-
-  
-const validateStep1 = () => {
+  const validateStep1 = () => {
     const {
       jobTitle,
       description,
@@ -189,17 +223,23 @@ const validateStep1 = () => {
   };
 
   const validateStep2 = () => {
+    console.log("Running validation for Step 2...");
     const { workSetupRemarks, questions } = careerData;
     const step2Errors: Step2Errors = {};
 
+    console.log("Current workSetupRemarks:", workSetupRemarks);
     if (!workSetupRemarks || workSetupRemarks.trim().length === 0) {
       step2Errors.workSetupRemarks = "AI custom instructions cannot be empty.";
+      console.log("Validation error: AI custom instructions are empty.");
     }
 
     const questionsList = questions[0]?.questions || [];
+    console.log("Current CV Validation questions:", questionsList);
     questionsList.forEach(q => {
+      console.log(`Validating question id: ${q.id}`, q);
       if (!q.title || q.title.trim().length === 0) {
         step2Errors[q.id] = "Question title cannot be empty.";
+        console.log(`Validation error: Question with id ${q.id} has an empty title.`);
       }
     });
 
@@ -219,71 +259,112 @@ const validateStep1 = () => {
       return { ...newErrors, ...step2Errors };
     });
 
-    return Object.keys(step2Errors).length === 0;
+    const isValid = Object.keys(step2Errors).length === 0;
+    console.log("Step 2 validation complete. Is valid:", isValid, "Errors:", step2Errors);
+    return isValid;
   };
-  
-  /**
-   * --- UPDATED: Hooked validation into the save button ---
-   */
-  const confirmSaveCareer = async (status: "active" | "inactive") => {
-    // --- 1. Validate first ---
-    if (!validateStep1()) {
-      console.log("Validation failed");
-      return; // Stop if invalid
+
+  const validateStep3 = () => {
+    const { customInterviewQuestions } = careerData;
+    const step3Errors: Step3Errors = {};
+    let emptyCount = 0;
+
+    if (customInterviewQuestions) {
+      customInterviewQuestions.forEach((q, index) => {
+        if (!q.text || q.text.trim().length === 0) {
+          emptyCount++;
+          step3Errors[`customInterviewQuestion_${index}`] = "Question text cannot be empty.";
+        }
+      });
     }
 
-    // --- 2. Proceed with saving if valid ---
-    setIsLoading(true);
-    console.log(`Saving career with status: ${status}`, careerData);
-    
-    return new Promise(resolve => {
-      setTimeout(() => {
-        if (!draftId) setDraftId(`mock-draft-${status}-id-456`);
-        setIsLoading(false);
-        console.log(`Career saved as ${status}!`);
-        resolve(true);
-      }, 1000);
+    if (!customInterviewQuestions || customInterviewQuestions.length < 5) {
+      step3Errors.customInterviewQuestions = "At least 5 custom interview questions are required.";
+    } else if (emptyCount > 0) {
+      step3Errors.customInterviewQuestions = `You have ${emptyCount} question(s) with an empty text.`;
+    }
+
+    setErrors(prev => {
+      const newErrors = { ...prev };
+      // remove old step 3 errors
+      Object.keys(newErrors).forEach(key => {
+        if (key.startsWith('customInterviewQuestion')) {
+          delete newErrors[key];
+        }
+      });
+      return { ...newErrors, ...step3Errors };
     });
+
+    return Object.keys(step3Errors).length === 0;
+  };
+  
+  const handleSaveCareer = async (status: "active" | "inactive") => {
+    console.log(`Attempting to save career with status: ${status}`);
+    const isStep1Valid = validateStep1();
+    const isStep2Valid = validateStep2();
+    const isStep3Valid = validateStep3();
+    console.log(`Validation results - Step 1: ${isStep1Valid}, Step 2: ${isStep2Valid}, Step 3: ${isStep3Valid}`);
+
+    if (!isStep1Valid || !isStep2Valid || !isStep3Valid) {
+      console.log("Validation failed in handleSaveCareer. Aborting save.");
+      errorToast("Please fill out all required fields before publishing.", 1500);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const payload = {
+        careerData: { ...careerData, _id: draftId },
+        orgID,
+        user: { image: user.image, name: user.name, email: user.email },
+        status,
+      };
+      const response = await axios.patch("/api/career-data", payload);
+
+      if (response.data.success) {
+        candidateActionToast(
+          <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 8, marginLeft: 8 }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "#181D27" }}>Career {status === "active" ? "published" : "saved"}!</span>
+          </div>,
+          1300, 
+      <i className="la la-check-circle" style={{ color: "#039855", fontSize: 32 }}></i>);
+        setTimeout(() => {
+          window.location.href = `/recruiter-dashboard/careers`;
+        }, 1300);
+      }
+    } catch (error) {
+      console.error("Failed to save career", error);
+      errorToast("Failed to save career",1500);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  /**
-   * --- UPDATED: Hooked validation into the 'Next' button ---
-   */
-  const handleNextStep = async () => {
-    // --- 1. Validate the current step first ---
+  const handleSaveAndNext = async () => {
+    console.log(`"Save and Next" clicked on step ${currentStep}`);
     let isValid = true;
     if (currentStep === 1) {
       isValid = validateStep1();
     } else if (currentStep === 2) {
       isValid = validateStep2();
+    } else if (currentStep === 3) {
+      isValid = validateStep3();
     }
 
-    // --- 2. If not valid, stop here. The toast was already shown. ---
     if (!isValid) {
-      console.log("Validation failed, cannot move to next step.");
+      console.log(`Validation failed for step ${currentStep}. Cannot move to next step.`);
       return;
     }
 
-    // 3. Save progress first
-    await handleSaveDraft();
-
-    // 4. Move to next step if not last step
-    if (currentStep < 5) {
+    if (currentStep === 4) {
+      await handleSaveCareer("active");
+    } else {
+      await handleSaveDraft();
       const nextStep = currentStep + 1;
       setCurrentStep(nextStep);
       if (nextStep > maxAchievedStep) {
         setMaxAchievedStep(nextStep);
       }
-      setErrors({});
-    } else {
-      // Logic for "Finish & Post" on the last step
-      console.log("Finishing and posting career!");
-    }
-  };
-
-  const handleBackStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
       setErrors({});
     }
   };
@@ -312,6 +393,7 @@ const renderStep = () => {
         <Step3_AIInterview
           careerData={careerData}
           setCareerData={setCareerData}
+          errors={errors}
         />
       );
     case 4:
@@ -343,10 +425,7 @@ const renderStep = () => {
         <h1 style={{ fontSize: "24px", fontWeight: 550, color: "#111827" }}>
           {draftId ? (
             <span>
-              {/* This span is ONLY for the grey text */}
               <span style={{ color: "#6B7280" }}>[DRAFT] </span>
-              
-              {/* This text will be the default h1 color (black) */}
               {careerData.jobTitle}
             </span>
           ) : (
@@ -355,22 +434,28 @@ const renderStep = () => {
         </h1>
         <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "10px" }}>
           <button
-            // Simple check just to enable/disable button
             disabled={careerData.jobTitle.trim() === "" || isLoading}
             style={{ width: "fit-content", color: "#414651", background: "#fff", border: "1px solid #D5D7DA", padding: "8px 16px", borderRadius: "60px", cursor: (careerData.jobTitle.trim() === "" || isLoading) ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}
             onClick={() => {
-              confirmSaveCareer("inactive");
+              handleSaveCareer("inactive");
             }}>
             Save as Unpublished
           </button>
           <button
             disabled={careerData.jobTitle.trim() === "" || isLoading}
             style={{ width: "fit-content", background: (careerData.jobTitle.trim() === "" || isLoading) ? "#D5D7DA" : "black", color: "#fff", border: "1px solid #E9EAEB", padding: "8px 16px", borderRadius: "60px", cursor: (careerData.jobTitle.trim() === "" || isLoading) ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}
-            onClick={() => {
-              confirmSaveCareer("active");
-            }}>
-            <i className="la la-check-circle" style={{ color: "#fff", fontSize: 20, marginRight: 8 }}></i>
-            Save as Published
+            onClick={handleSaveAndNext}>
+            {currentStep === 4 ? (
+              <>
+                <i className="la la-check-circle" style={{ color: "#fff", fontSize: 20, marginRight: 8 }}></i>
+                Save as Published
+              </>
+            ) : (
+              <>
+                Save and Next
+                <i className="la la-arrow-right" style={{ color: "#fff", fontSize: 16, marginLeft: 8 }}></i>
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -400,64 +485,7 @@ const renderStep = () => {
 
         {/* Navigation buttons */}
 
-    <div className="flex justify-end mt-8 border-t pt-6">
-      {/* "Save Draft" button removed */}
-      <div style={{ display: "flex", gap: "12px" }}>
-        {/* "Back" button (Grey Style) */}
-        <button
-          onClick={handleBackStep}
-          disabled={currentStep === 1 || isLoading}
-          style={{
-            width: "fit-content",
-            color: (currentStep === 1 || isLoading) ? "#9CA3AF" : "#414651",
-            background: "#fff",
-            border: "1px solid #D5D7DA",
-            padding: "10px 24px", // <-- MADE BIGGER
-            borderRadius: "60px",
-            cursor: (currentStep === 1 || isLoading) ? "not-allowed" : "pointer",
-            whiteSpace: "nowrap",
-            opacity: (currentStep === 1 || isLoading) ? 0.7 : 1,
-            transition: "all 0.2s",
-            fontSize: "15px", // <-- MADE BIGGER
-            fontWeight: "700" // <-- MADE BIGGER
-          }}
-        >
-          Back
-        </button>
 
-        {/* "Next / Finish" button (Black Style) */}
-        <button
-          onClick={handleNextStep}
-          disabled={isLoading || Object.keys(errors).length > 0}
-          style={{
-            width: "fit-content",
-            background: (isLoading || Object.keys(errors).length > 0) ? "#D5D7DA" : "black",
-            color: "#fff",
-            border: "1px solid",
-            borderColor: (isLoading || Object.keys(errors).length > 0) ? "#D5D7DA" : "black",
-            padding: "10px 24px", // <-- MADE BIGGER
-            borderRadius: "60px",
-            cursor: (isLoading || Object.keys(errors).length > 0) ? "not-allowed" : "pointer",
-            whiteSpace: "nowrap",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            transition: "all 0.2s",
-            fontSize: "15px", // <-- MADE BIGGER
-            fontWeight: "700" // <-- MADE BIGGER
-          }}
-        >
-          {currentStep === 5 ? "Finish & Post" : "Next"}
-          
-          {/* Conditional Icon */}
-          {currentStep === 5 ? (
-            <i className="la la-check-circle" style={{ color: "#fff", fontSize: 18 }}></i>
-          ) : (
-            <i className="la la-arrow-right" style={{ color: "#fff", fontSize: 16 }}></i>
-          )}
-        </button>
-      </div>
-    </div>
       </div>
     </div>
   );
