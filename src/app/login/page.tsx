@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+/* import { NextResponse } from "next/server";
 import connectMongoDB from "@/lib/mongoDB/mongoDB";
 
 export async function POST(request: Request) {
@@ -60,4 +60,8 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-}
+} */ 
+
+  //Commented for vercel build error 
+  // Type error: Page "src/app/login/page.tsx" does not match the required types of a Next.js Page.
+  //"POST" is not a valid Page export field.
