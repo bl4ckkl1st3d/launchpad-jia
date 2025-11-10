@@ -7,17 +7,79 @@ import { useAppContext } from "../../context/AppContext";
 import DirectInterviewLinkV2 from "./DirectInterviewLinkV2";
 import CareerForm from "./CareerForm";
 import CareerLink from "./CareerLink";
+import RichTextEditor from "@/lib/components/CareerComponents/RichTextEditor";
+import "@/lib/components/CareerSteps/Step1_Details.scss";
+import "@/lib/components/CareerSteps/Step4_Review.scss";
+
+const ReviewField = ({ label, value }: { label: string; value: string }) => (
+  <div className="review-field">
+    <label>{label}</label>
+    <p className="review-text">{value || "N/A"}</p>
+  </div>
+);
+
+// Define Props for JobDescription
+interface JobDescriptionProps {
+  formData: any;
+  setFormData: (data: any) => void;
+  editModal: boolean; // This was in the original page.tsx
+  isEditing: boolean;
+  setIsEditing: (isEditing: boolean) => void;
+  handleCancelEdit: () => void;
+}
 
 export default function JobDescription({ formData, setFormData, editModal, isEditing, setIsEditing, handleCancelEdit }: { formData: any, setFormData: (formData: any) => void, editModal: boolean, isEditing: boolean, setIsEditing: (isEditing: boolean) => void, handleCancelEdit: () => void }) {
     const { user } = useAppContext();
     const [showEditModal, setShowEditModal] = useState(false);
-
+    const [isCard1Open, setIsCard1Open] = useState(true);
+    const [isCard2Open, setIsCard2Open] = useState(true);
+    const [isCard3Open, setIsCard3Open] = useState(true);
     useEffect(() => {
         if (editModal) {
             setShowEditModal(true);
         }
     }, [editModal]);
 
+    const getFullProvinceName = () => {
+    // In a real scenario, this component would need access to the locations JSON
+    // to map formData.province (e.g., "MM") to "Metro Manila".
+    return formData.province || "N/A";
+  };
+  const formatSalary = () => {
+    if (formData.salaryNegotiable) return "Negotiable";
+    if (formData.minimumSalary && formData.maximumSalary) {
+      return `₱${formData.minimumSalary} - ₱${formData.maximumSalary}`;
+    }
+    if (formData.minimumSalary) return `From ₱${formData.minimumSalary}`;
+    if (formData.maximumSalary) return `Up to ₱${formData.maximumSalary}`;
+    return "Not specified";
+  };
+  
+const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >,
+  ) => {
+    if (!e || !e.target) return;
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+  };
+
+  // Handler for the RichTextEditor
+  const handleDescriptionChange = (value: string) => {
+    setFormData({ ...formData, description: value });
+  };
+
+  // Handler for toggles
+  const handleToggleChange = (name: string) => {
+    setFormData({
+      ...formData,
+      [name]: !formData[name],
+    });
+  };
     const handleEdit = () => {
         setShowEditModal(true);
     }
@@ -133,149 +195,481 @@ export default function JobDescription({ formData, setFormData, editModal, isEdi
           </button>
             <div className="thread-set">
                 <div className="left-thread">
-                    <div className="layered-card-outer">
-                        <div className="layered-card-middle">
-                        <div style={{ display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "flex-start", width: "100%", gap: 8 }}>
-                      <div style={{ width: 32, height: 32, display: "flex", justifyContent: "center", alignItems: "center", gap: 8, background: "#181D27", borderRadius: "60px" }}>
-                      <i className="la la-suitcase" style={{ fontSize: 20, color: "#FFFFFF"}} /> 
+      {/* --- CARD 1: Career Details (from Step4_Review) --- */}
+      <div className="layered-card-outer">
+      <div className="review-card">
+        <div className="review-card-header">
+          <div className="header-left">
+            <button
+              className="collapse-button"
+              aria-expanded={isCard1Open}
+              onClick={() => setIsCard1Open(!isCard1Open)}
+            >
+              <i
+                className={
+                  isCard1Open
+                    ? "la la-chevron-circle-down"
+                    : "la la-chevron-circle-right"
+                }
+              />
+            </button>
+            <h3>Career Details</h3>
+          </div>
+          {/* Edit button is handled by parent `page.tsx` */}
+        </div>
+
+        {isCard1Open && (
+          <div className="review-card-content">
+            {!isEditing ? (
+              // --- NOT EDITING (Review Mode from Step4_Review) ---
+              <>
+                <div className="review-grid full-width">
+                  <ReviewField label="Job Title" value={formData.jobTitle} />
+                </div>
+                <hr className="review-divider" />
+                <div className="review-grid">
+                  <ReviewField
+                    label="Employment Type"
+                    value={formData.employmentType}
+                  />
+                  <ReviewField
+                    label="Work Arrangement"
+                    value={formData.workSetup}
+                  />
+                  <div></div>
+                </div>
+                <hr className="review-divider" />
+                <div className="review-grid">
+                  <ReviewField
+                    label="Country"
+                    value={formData.country || "Philippines"}
+                  />
+                  <ReviewField
+                    label="State/Province"
+                    value={getFullProvinceName()} // Uses helper
+                  />
+                  <ReviewField label="City" value={formData.city} />
+                </div>
+                <hr className="review-divider" />
+                <div className="review-grid">
+                  <ReviewField
+                    label="Minimum Salary"
+                    value={
+                      formData.minimumSalary
+                        ? `₱${formData.minimumSalary}`
+                        : "N/A"
+                    }
+                  />
+                  <ReviewField
+                    label="Maximum Salary"
+                    value={
+                      formData.maximumSalary
+                        ? `₱${formData.maximumSalary}`
+                        : "N/A"
+                    }
+                  />
+                  <ReviewField label="Salary" value={formatSalary()} />
+                </div>
+                <hr className="review-divider" />
+                <div className="review-field">
+                  <label>Job Description</label>
+                  <div
+                    className="job-description-preview"
+                    dangerouslySetInnerHTML={{
+                      __html:
+                        formData.description ||
+                        "<p>No description provided.</p>",
+                    }}
+                  />
+                </div>
+              </>
+            ) : (
+              // --- IS EDITING (Form Mode from Step1_Details) ---
+              <div className="form-container">
+                {/* Job Title is edited in the HeaderBar, so we don't include it here */}
+
+                <div className="form-section">
+                  <h3 className="form-section__title">Work Setting</h3>
+                  <div className="form-row form-row--horizontal">
+                    <div className="form-group form-group--flex">
+                      <label htmlFor="workSetup">Location Type</label>
+                      <div className="select-wrapper">
+                        <select
+                          id="workSetup"
+                          name="workSetup"
+                          value={formData.workSetup || ""}
+                          onChange={handleInputChange}
+                        >
+                          <option value="On-site">On-site</option>
+                          <option value="Remote">Remote</option>
+                          <option value="Hybrid">Hybrid</option>
+                        </select>
                       </div>
-                      <span style={{ fontSize: 16, color: "#181D27", fontWeight: 700 }}>Career Information</span>
                     </div>
-                        <div className="layered-card-content">
-                            {isEditing ? <textarea className="form-control" placeholder="Job Description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} /> 
-                            : <p style={{ whiteSpace: 'pre-wrap' }} dangerouslySetInnerHTML={{ __html: formData.description }} />}
-                        </div>
-                        </div>
+                    <div className="form-group form-group--flex">
+                      <label htmlFor="employmentType">Employment Type</label>
+                      <div className="select-wrapper">
+                        <select
+                          id="employmentType"
+                          name="employmentType"
+                          value={formData.employmentType || ""}
+                          onChange={handleInputChange}
+                        >
+                          <option value="Full-time">Full-time</option>
+                          <option value="Part-time">Part-time</option>
+                          <option value="Contract">Contract</option>
+                          <option value="Internship">Internship</option>
+                        </select>
+                      </div>
                     </div>
-                    {!isEditing ? 
-                    <div className="layered-card-outer">
-                        <div className="layered-card-middle">
-                        <div style={{ display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "flex-start", width: "100%", gap: 8 }}>
-                          <div style={{ width: 32, height: 32, display: "flex", justifyContent: "center", alignItems: "center", gap: 8, background: "#181D27", borderRadius: "60px" }}>
-                          <i className="la la-comment-alt" style={{ fontSize: 20, color: "#FFFFFF"}} /> 
-                          </div>
-                          <span style={{fontSize: 16, color: "#181D27", fontWeight: 700}}>
-                            Interview Questions 
-                          </span>
-                          <div style={{ borderRadius: "50%", width: 30, height: 22, border: "1px solid #D5D9EB", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, backgroundColor: "#F8F9FC", color: "#181D27", fontWeight: 700 }}>
-                            {formData.questions.reduce((acc, group) => acc + group.questions.length, 0)}
-                          </div>
-                        </div>
-                    
-                    <div className="layered-card-content">
-                        {formData.questions?.length > 0 && formData.questions?.map((questionGroup: any, index: number) => (
-                            <div key={index}>
-                                <h4>{questionGroup.category}</h4>
-                                {questionGroup?.questions?.length > 0 && questionGroup?.questions?.map((question: any, index: number) => (
-                                    <ul key={index}>
-                                        <li>{question.question}</li>
-                                    </ul>
-                                ))}
-                            </div>
-                        ))}
+                  </div>
+                </div>
+
+                <div className="form-section" style={{ zIndex: 2 }}>
+                  <h3 className="form-section__title">Location</h3>
+                  {/* Simplified Location vs Step1 - no complex JSON logic */}
+                  <div className="form-group">
+                    <label htmlFor="province">State/Province</label>
+                    <input
+                      type="text"
+                      id="province"
+                      name="province"
+                      value={formData.province}
+                      onChange={handleInputChange}
+                      placeholder="Enter province"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="city">City</label>
+                    <input
+                      type="text"
+                      id="city"
+                      name="city"
+                      value={formData.city}
+                      onChange={handleInputChange}
+                      placeholder="Enter city"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-section" style={{ zIndex: 1 }}>
+                  <div className="salary-toggle-wrapper">
+                    <h3 className="form-section__title">Salary</h3>
+                    <div className="toggle-control">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleChange("salaryNegotiable")}
+                        className={`toggle-control__button ${
+                          formData.salaryNegotiable
+                            ? "toggle-control__button--active"
+                            : ""
+                        }`}
+                      >
+                        <span className="toggle-control__knob" />
+                      </button>
+                      <span className="toggle-control__label">
+                        {formData.salaryNegotiable
+                          ? "Salary is negotiable"
+                          : "Salary is fixed"}
+                      </span>
                     </div>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group form-group--flex">
+                      <label htmlFor="minimumSalary">Minimum Salary</label>
+                      <input
+                        type="number"
+                        id="minimumSalary"
+                        name="minimumSalary"
+                        value={formData.minimumSalary || ""}
+                        onChange={handleInputChange}
+                        placeholder="e.g., 20,000"
+                      />
                     </div>
-                    </div> : <InterviewQuestionGeneratorV2 questions={formData.questions} setQuestions={(questions) => setFormData({ ...formData, questions: questions })} jobTitle={formData.jobTitle} description={formData.description} />}
+                    <div className="form-group form-group--flex">
+                      <label htmlFor="maximumSalary">Maximum Salary</label>
+                      <input
+                        type="number"
+                        id="maximumSalary"
+                        name="maximumSalary"
+                        value={formData.maximumSalary || ""}
+                        onChange={handleInputChange}
+                        placeholder="e.g., 30,000"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  className="card-block__header"
+                  style={{ paddingTop: "20px" }}
+                >
+                  <span className="card-block__title">Job Description</span>
+                </div>
+                <RichTextEditor
+                  setText={handleDescriptionChange}
+                  text={formData.description}
+                />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      </div>
+
+      {/* --- CARD 2: CV Review (from Step4_Review) --- */}
+      <div className="layered-card-outer">
+      <div className="review-card">
+        <div className="review-card-header">
+          <div className="header-left">
+            <button
+              className="collapse-button"
+              aria-expanded={isCard2Open}
+              onClick={() => setIsCard2Open(!isCard2Open)}
+            >
+              <i
+                className={
+                  isCard2Open
+                    ? "la la-chevron-circle-down"
+                    : "la la-chevron-circle-right"
+                }
+              />
+            </button>
+            <h3>CV Review and Pre-Screening Questions</h3>
+          </div>
+        </div>
+
+        {isCard2Open && (
+          <div className="review-card-content">
+            {!isEditing ? (
+              // --- NOT EDITING (Review Mode from Step4_Review) ---
+              <>
+                <div className="review-grid full-width">
+                  <ReviewField
+                    label="CV Screening"
+                    value={formData.screeningSetting}
+                  />
+                </div>
+                <hr className="review-divider" />
+                <div className="review-field">
+                  <label>CV Secret Prompt</label>
+                  <p
+                    className="review-text"
+                    style={{ fontStyle: "italic", color: "#555" }}
+                  >
+                    {formData.workSetupRemarks || // Re-using this field as per Step4
+                      "No custom instructions provided."}
+                  </p>
+                </div>
+                <hr className="review-divider" />
+                <div className="review-field">
+                  <label>Pre-Screening Questions</label>
+                  {/* Logic from Step4_Review */}
+                  {formData.questions?.length > 0 &&
+                  formData.questions[0]?.questions.length > 0 ? (
+                    <ol
+                      style={{ paddingLeft: "20px", margin: 0, width: "100%" }}
+                    >
+                      {formData.questions[0].questions.map((q: any) => (
+                        <li
+                          key={q.id}
+                          className="review-text"
+                          style={{ marginBottom: "8px" }}
+                        >
+                          {q.title} {/* Step4 uses q.title */}
+                        </li>
+                      ))}
+                    </ol>
+                  ) : (
+                    <p>No custom questions added.</p>
+                  )}
+                </div>
+              </>
+            ) : (
+              // --- IS EDITING (Form Mode from Step2_CVReview & original snippet) ---
+              <div className="form-container">
+                <div className="form-section">
+                  <h3 className="form-section__title">CV Screening</h3>
+                  <div className="form-group">
+                    <label htmlFor="screeningSetting">Screening Type</label>
+                    <div className="select-wrapper">
+                      <select
+                        id="screeningSetting"
+                        name="screeningSetting"
+                        value={formData.screeningSetting || ""}
+                        onChange={handleInputChange}
+                      >
+                        <option value="AI Screening">AI Screening</option>
+                        <option value="Manual Screening">Manual Screening</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="workSetupRemarks">CV Secret Prompt</label>
+                    <textarea
+                      id="workSetupRemarks"
+                      name="workSetupRemarks"
+                      className="form-control"
+                      value={formData.workSetupRemarks}
+                      onChange={handleInputChange}
+                      placeholder="e.g., Prioritize candidates with 3+ years of experience..."
+                      rows={3}
+                    />
+                  </div>
+                </div>
+                <div className="form-section">
+                  <h3 className="form-section__title">
+                    Pre-Screening Questions
+                  </h3>
+                  {/* This is from the user's original JobDescription.tsx snippet */}
+                  <InterviewQuestionGeneratorV2
+                    questions={formData.questions}
+                    setQuestions={(questions: any) =>
+                      setFormData({ ...formData, questions: questions })
+                    }
+                    jobTitle={formData.jobTitle}
+                    description={formData.description}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      </div>
+
+      {/* --- CARD 3: AI Interview (from Step4_Review) --- */}
+      <div className="layered-card-outer">
+      <div className="review-card">
+        <div className="review-card-header">
+          <div className="header-left">
+            <button
+              className="collapse-button"
+              aria-expanded={isCard3Open}
+              onClick={() => setIsCard3Open(!isCard3Open)}
+            >
+              <i
+                className={
+                  isCard3Open
+                    ? "la la-chevron-circle-down"
+                    : "la la-chevron-circle-right"
+                }
+              />
+            </button>
+            <h3>AI Interview Setup</h3>
+          </div>
+        </div>
+
+        {isCard3Open && (
+          <div className="review-card-content">
+            {!isEditing ? (
+              // --- NOT EDITING (Review Mode from Step4_Review) ---
+              <>
+                <div className="review-grid">
+                  <ReviewField
+                    label="AI Interview Screening"
+                    value={formData.screeningSetting} // Step4 seems to duplicate this
+                  />
+                  <ReviewField
+                    label="Require Video on Interview"
+                    value={formData.requireVideo ? "Yes" : "No"}
+                  />
+                </div>
+                <hr className="review-divider" />
+                <div className="review-field">
+                  <label>AI Interview Secret Prompt</label>
+                  <p
+                    className="review-text"
+                    style={{ fontStyle: "italic", color: "#555" }}
+                  >
+                    {formData.workSetupRemarks || // Step4 duplicates this field
+                      "No custom instructions provided."}
+                  </p>
+                </div>
+                <hr className="review-divider" />
+                <div className="review-field">
+                  <label>Interview Questions</label>
+                  {/* Using the same logic as Card 2 for consistency */}
+                  {formData.questions?.length > 0 &&
+                  formData.questions[0]?.questions.length > 0 ? (
+                    <ol
+                      style={{ paddingLeft: "20px", margin: 0, width: "100%" }}
+                    >
+                      {formData.questions[0].questions.map((q: any) => (
+                        <li
+                          key={q.id}
+                          className="review-text"
+                          style={{ marginBottom: "8px" }}
+                        >
+                          {q.title}
+                        </li>
+                      ))}
+                    </ol>
+                  ) : (
+                    <p>No custom questions added.</p>
+                  )}
+                </div>
+              </>
+            ) : (
+              // --- IS EDITING (Form Mode from Step3_AIInterview / Step1_Details) ---
+              <div className="form-container">
+                <div className="form-section">
+                  <h3 className="form-section__title">Video Settings</h3>
+                  <div className="toggle-control">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleChange("requireVideo")}
+                      className={`toggle-control__button ${
+                        formData.requireVideo
+                          ? "toggle-control__button--active"
+                          : ""
+                      }`}
+                    >
+                      <span className="toggle-control__knob" />
+                    </button>
+                    <span className="toggle-control__label">
+                      {formData.requireVideo
+                        ? "Video is required"
+                        : "Video is optional"}
+                    </span>
+                  </div>
+                </div>
+                <div className="form-section">
+                  <h3 className="form-section__title">
+                    AI Interview Secret Prompt
+                  </h3>
+                  <div className="form-group">
+                    <label htmlFor="workSetupRemarks">Prompt</label>
+                    <textarea
+                      id="workSetupRemarks"
+                      name="workSetupRemarks"
+                      className="form-control"
+                      value={formData.workSetupRemarks}
+                      onChange={handleInputChange}
+                      placeholder="e.g., Focus on communication skills..."
+                      rows={3}
+                    />
+                  </div>
+                </div>
+                <div className="form-section">
+                  <h3 className="form-section__title">
+                    AI Interview Questions
+                  </h3>
+                  <p>
+                    Interview questions are managed in the 'CV Review' section
+                    above.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      </div>
                 </div>
 
                 <div className="right-thread">
-                    <div className="layered-card-outer">
-                        <div className="layered-card-middle">
-                        <div style={{ display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "flex-start", width: "100%", gap: 8 }}>
-                      <div style={{ width: 32, height: 32, display: "flex", justifyContent: "center", alignItems: "center", gap: 8, background: "#181D27", borderRadius: "60px" }}>
-                      <i className="la la-ellipsis-h" style={{ fontSize: 20, color: "#FFFFFF"}} /> 
-                      </div>
-                      <span style={{ fontSize: 16, color: "#181D27", fontWeight: 700 }}>Additional Details</span>
-                      </div>
-                        
-                        <div className="layered-card-content">
-                            <div style={{ display: "flex",flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: "100%"}}>
-                                <strong>Employment Type:</strong> 
-                                <span>{formData.employmentType || "Full-time"}</span>
-                            </div>
-                            <div style={{ display: "flex",flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: "100%"}}>
-                                <strong>Work Arrangement:</strong> 
-                                <span>{formData.workSetup || "-"}</span>
-                            </div>
-                            <div style={{ display: "flex",flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: "100%"}}>
-                                <strong>Work Arrangement Remarks:</strong> 
-                                <span>{formData.workSetupRemarks || "-"}</span>
-                            </div>
-                            <div style={{ display: "flex",flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: "100%"}}>
-                                <strong>Salary:</strong> 
-                                <span>{formData.salaryNegotiable ? "Negotiable" : "Fixed"}</span>
-                            </div>
-                            <div style={{ display: "flex",flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: "100%"}}>
-                                <strong>Minimum Salary:</strong> 
-                                <span>{formData.minimumSalary || "-"}</span>
-                            </div>
-                            <div style={{ display: "flex",flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: "100%"}}>
-                                <strong>Maximum Salary:</strong> 
-                                <span>{formData.maximumSalary || "-"}</span>
-                            </div>
-                            <div style={{ height: "1px", width: "100%", background: "#E9EAEB", margin: "16px 0" }}></div>
-                            <div style={{ display: "flex",flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: "100%"}}>
-                                <strong>Country:</strong> 
-                                <span>Philippines </span>
-                            </div>
-                            <div style={{ display: "flex",flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: "100%"}}>
-                                <strong>State/Province:</strong> 
-                                <span>{formData.province || "-"}</span>
-                            </div>
-                            <div style={{ display: "flex",flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: "100%"}}>
-                                <strong>City:</strong> 
-                                <span>{formData.location || "-"}</span>
-                            </div>
-                            <div style={{ height: "1px", width: "100%", background: "#E9EAEB", margin: "16px 0" }}></div>
-                            <div style={{ display: "flex",flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: "100%"}}>
-                                <strong>Screening Setting:</strong> 
-                                {isEditing ? <ScreeningSettingButton screeningSetting={formData.screeningSetting} onSelectSetting={(setting) => setFormData({ ...formData, screeningSetting: setting })} /> : 
-                                <span style={{ textTransform: "capitalize" }}>{formData.screeningSetting}</span>}
-                            </div>
-                            <div style={{ display: "flex",flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: "100%"}}>
-                                <strong>Require Video:</strong> 
-                                {isEditing ? <button
-                                    className={`button-primary ${formData.requireVideo ? "" : "negative"}`}
-                                    onClick={() => {
-                                    setFormData({ ...formData, requireVideo: !formData.requireVideo });
-                                    }}
-                                >
-                                <i
-                                className={`la ${
-                                    formData.requireVideo ? "la-video" : "la-video-slash"
-                                }`}
-                                ></i>{" "}
-                                {formData.requireVideo ? "On" : "Off"}
-                            </button> :
-                                <span>
-                               {formData.requireVideo ? "Yes" : "No"}</span>}
-                            </div>
-
-                            <div style={{ height: "1px", width: "100%", background: "#E9EAEB", margin: "16px 0" }}></div>
-                            <div style={{ display: "flex",flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: "100%"}}>
-                                <strong>Created By:</strong> 
-                                {formData.createdBy && <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 8 }}>
-                                  <img src={formData.createdBy.image} alt="created by" style={{ width: 32, height: 32, borderRadius: "50%" }} />
-                                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
-                                    <span style={{ fontSize: 14, fontWeight: 600, color: "#181D27" }}>{formData.createdBy.name}</span>
-                                    <span style={{ fontSize: 12, color: "#717680" }}> on {formData.createdAt ? new Date(formData.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "-"}</span>
-                                  </div>
-                                </div>}
-                            </div>
-
-                            <div style={{ display: "flex",flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: "100%"}}>
-                                <strong>Last Updated By:</strong> 
-                                {formData.lastEditedBy && <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 8 }}>
-                                  <img src={formData.lastEditedBy.image} alt="created by" style={{ width: 32, height: 32, borderRadius: "50%" }} />
-                                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
-                                    <span style={{ fontSize: 14, fontWeight: 600, color: "#181D27" }}>{formData.lastEditedBy.name}</span>
-                                    <span style={{ fontSize: 12, color: "#717680" }}> on {formData.updatedAt ? new Date(formData.updatedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "-"}</span>
-                                  </div>
-                                </div>}
-                            </div>
-                        </div>
-                        </div>
-                    </div>
+                    
                     <CareerLink career={formData} />
                     {/* Card for direct interview link */}
                     <DirectInterviewLinkV2 formData={formData} setFormData={setFormData} />
@@ -308,6 +702,9 @@ export default function JobDescription({ formData, setFormData, editModal, isEdi
                 </div>
                 </div>
             </div>
+
+
+            
             {showEditModal && (
                 <div
                 className="modal show fade-in-bottom"
