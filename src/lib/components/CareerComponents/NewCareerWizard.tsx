@@ -34,6 +34,7 @@ export interface CareerData {
   city: string;
   teamAccess: Array<{ email: string; name: string; role: "Owner" | "Member" }>;
   customInterviewQuestions: any[];
+  aiPreamble: string;
 }
 
 // This is all the state from your old CareerForm.tsx, now in one place.
@@ -54,6 +55,7 @@ const initialCareerData: CareerData = {
   city: "",
   teamAccess: [], // Your new requested field
   customInterviewQuestions: [],
+  aiPreamble: "",
 };
 export interface Step1Errors {
   jobTitle?: string;

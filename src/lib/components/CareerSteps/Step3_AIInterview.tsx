@@ -28,7 +28,7 @@ const Step3_AIInterview: React.FC<CareerStepProps> = ({ careerData, setCareerDat
   const handleToggle = () => {
     setCareerData(prev => ({ 
       ...prev, 
-      videoRecordingEnabled: !prev.videoRecordingEnabled 
+      videoRecordingEnabled: !prev.requireVideo 
     }));
   };
 
@@ -45,7 +45,7 @@ const Step3_AIInterview: React.FC<CareerStepProps> = ({ careerData, setCareerDat
   };
 
   // Read video state from prop, default to 'true' if not provided
-  const isVideoEnabled = careerData.videoRecordingEnabled ?? true;
+  const isVideoEnabled = careerData.requireVideo ?? true;
 
   return (
     <div className="step1-container"> 
@@ -146,9 +146,7 @@ const Step3_AIInterview: React.FC<CareerStepProps> = ({ careerData, setCareerDat
                 <InterviewQuestionBuilder
                   customQuestions={careerData.customInterviewQuestions || []}
                   setCustomQuestions={handleCustomQuestionsChange}
-                  jobDescription={careerData.jobDescription || ''}
-                  orgId={careerData.orgId || ''}
-                  errors={errors}
+                  jobDescription={careerData.jobTitle || ''}
                 />
               </div>
             </div>

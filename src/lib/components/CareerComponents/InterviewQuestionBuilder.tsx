@@ -24,7 +24,7 @@ interface InterviewQuestionBuilderProps {
   customQuestions: Question[];
   setCustomQuestions: (questions: Question[]) => void;
   jobDescription: string;
-  orgId: string;
+
 }
 
 const CATEGORIES: QuestionCategory[] = [
@@ -39,7 +39,7 @@ const InterviewQuestionBuilder: React.FC<InterviewQuestionBuilderProps> = ({
   customQuestions = [],
   setCustomQuestions,
   jobDescription,
-  orgId,
+
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
