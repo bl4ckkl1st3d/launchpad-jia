@@ -48,13 +48,7 @@ const initialCareerData: CareerData = {
   salaryNegotiable: true,
   minimumSalary: "",
   maximumSalary: "",
-  questions: [
-    { id: 1, category: "CV Validation / Experience", questionCountToAsk: null, questions: [] },
-    { id: 2, category: "Technical", questionCountToAsk: null, questions: [] },
-    { id: 3, category: "Behavioral", questionCountToAsk: null, questions: [] },
-    { id: 4, category: "Analytical", questionCountToAsk: null, questions: [] },
-    { id: 5, category: "Others", questionCountToAsk: null, questions: [] },
-  ],
+  questions: [],
   country: "Philippines",
   province: "",
   city: "",
@@ -233,14 +227,16 @@ export default function NewCareerWizard() {
       console.log("Validation error: AI custom instructions are empty.");
     }
 
-    const questionsList = questions[0]?.questions || [];
+    const questionsList = questions || [];
     console.log("Current CV Validation questions:", questionsList);
-    questionsList.forEach(q => {
-      console.log(`Validating question id: ${q.id}`, q);
-      if (!q.title || q.title.trim().length === 0) {
-        step2Errors[q.id] = "Question title cannot be empty.";
-        console.log(`Validation error: Question with id ${q.id} has an empty title.`);
-      }
+    questionsList.forEach(category => {
+      category.questions.forEach(q => {
+        console.log(`Validating question id: ${q.id}`, q);
+        if (!q.title || q.title.trim().length === 0) {
+          step2Errors[q.id] = "Question title cannot be empty.";
+          console.log(`Validation error: Question with id ${q.id} has an empty title.`);
+        }
+      });
     });
 
     // We only want to set errors for Step 2, preserving Step 1 errors
@@ -250,7 +246,7 @@ export default function NewCareerWizard() {
       
       // Remove old Step 2 errors
       Object.keys(newErrors).forEach(key => {
-        if (key === 'workSetupRemarks' || key.startsWith('q_') || key.startsWith('custom_')) {
+        if (key === 'workSetupRemarks' || !isNaN(Number(key))) {
           delete newErrors[key];
         }
       });

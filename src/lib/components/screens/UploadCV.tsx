@@ -11,6 +11,24 @@ import { CORE_API_URL } from "@/lib/Utils";
 import axios from "axios";
 import Markdown from "react-markdown";
 import { useEffect, useRef, useState } from "react";
+import ScreeningQuestionCard from "@/lib/components/CareerComponents/ScreeningQuestionCard"; // <-- Import the new component
+import "@/lib/components/CareerComponents/QuestionBuilder.scss"; // Import styles for questions
+
+// Define the sections of the CV
+
+const cvSections = [
+  "Introduction",
+  "Current Position",
+  "Contact Info",
+  "Skills",
+  "Experience",
+  "Education",
+  "Projects",
+  "Certifications",
+  "Awards",
+];
+const step = ["Submit CV", "Pre-screening Questions", "Review Next Steps"];
+const stepStatus = ["Completed", "Pending", "In Progress"];
 
 export default function () {
   const fileInputRef = useRef(null);
@@ -25,19 +43,78 @@ export default function () {
   const [interview, setInterview] = useState(null);
   const [screeningResult, setScreeningResult] = useState(null);
   const [userCV, setUserCV] = useState(null);
-  const cvSections = [
-    "Introduction",
-    "Current Position",
-    "Contact Info",
-    "Skills",
-    "Experience",
-    "Education",
-    "Projects",
-    "Certifications",
-    "Awards",
-  ];
-  const step = ["Submit CV", "CV Screening", "Review Next Steps"];
-  const stepStatus = ["Completed", "Pending", "In Progress"];
+  const [screeningQuestions, setScreeningQuestions] = useState([]);
+  const [answers, setAnswers] = useState({});
+  
+  async function fetchCareerData(careerId) {
+    try {
+      const response = await axios.get(`/api/careers/${careerId}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching career data:", error);
+      return null;
+    }
+  }
+
+useEffect(() => {
+  if (currentStep !== step[1]) return;
+
+  const selectedCareer = sessionStorage.getItem("selectedCareer");
+  if (!selectedCareer) {
+    console.error("❌ No selected career found in sessionStorage.");
+    return;
+  }
+
+  const parsedCareer = JSON.parse(selectedCareer);
+  console.log("🟢 Selected Career object:", parsedCareer);
+
+  const questionList = parsedCareer.questions[0].questions || [];
+  if (questionList.length > 0) {
+    console.log("🟢 Question list to set in state:", questionList);
+    setScreeningQuestions(questionList);
+
+    // Initialize answers
+    const initialAnswers = {};
+    questionList.forEach((q) => {
+      if (q.type === "Checkboxes") {
+        initialAnswers[q.id] = {};
+      } else {
+        initialAnswers[q.id] = "";
+      }
+    });
+    setAnswers(initialAnswers);
+  } else {
+    console.warn("⚠️ No custom questions found for this career.");
+    setScreeningQuestions([]);
+  }
+}, [currentStep]);
+
+
+
+
+
+
+ // Run when the step changes to 1
+
+
+  // --- Handler to update the answers state ---
+  const handleAnswerChange = (questionId, value) => {
+    setAnswers(prev => ({
+      ...prev,
+      [questionId]: value,
+    }));
+  };
+
+  // --- Handler for submitting the screening questions ---
+  const handleSubmitScreening = () => {
+    // 1. TODO: Add validation here to check for isRequired fields
+    
+    // 2. TODO: Save the 'answers' object to your database
+    console.log("Submitting answers:", answers);
+
+    // 3. TODO: Move to the next step (which might be the loading screen again)
+    // setCurrentStep(step[2]); // Or whatever your next step is
+  };
 
   function handleDragOver(e) {
     e.preventDefault();
@@ -155,11 +232,25 @@ export default function () {
 
     if (storedSelectedCareer) {
       const parseStoredSelectedCareer = JSON.parse(storedSelectedCareer);
-      fetchInterview(parseStoredSelectedCareer.id);
+      // fetchInterview(parseStoredSelectedCareer.id); // Commented out for design override
     } else {
-      alert("No application is currently being managed.");
-      window.location.href = pathConstants.dashboard;
+      // alert("No application is currently being managed."); // Commented out for design override
+      // window.location.href = pathConstants.dashboard; // Commented out for design override
     }
+
+    // Temporarily override currentStep for design purposes
+    setCurrentStep(step[1]); // Set to "Review Next Steps" for design preview
+    setLoading(false);
+    // Set a dummy interview object to allow rendering for design purposes
+    setInterview({
+      interviewID: 'DummyID', // Use the actual careerId      jobTitle: "Dummy Job Title",
+      organization: { name: "Dummy Organization", image: "" },
+    });
+    // Set dummy screeningResult for step[2] design preview
+    setScreeningResult({
+      applicationStatus: "For AI Interview", // or "Dropped" or other status
+      status: "For AI Interview",
+    });
   }, []);
 
   useEffect(() => {
@@ -608,16 +699,41 @@ export default function () {
             </>
           )}
 
+
+
           {currentStep == step[1] && (
             <div className={styles.cvScreeningContainer}>
-              <img alt="" src={assetConstants.loading} />
-              <span className={styles.title}>Sit tight!</span>
-              <span className={styles.description}>
-                Our smart reviewer is checking your qualifications.
+              <span className={styles.title}>Pre-Screening Questions</span>
+              <span
+                className={styles.description}
+                style={{ marginBottom: "2rem" }}
+              >
+                Please answer the questions below before we proceed.
               </span>
-              <span className={styles.description}>
-                We'll let you know what's next in just a moment.
-              </span>
+
+              {/* Render the list of questions */}
+              <div className="question-builder-list" style={{ width: "100%" }}>
+                {screeningQuestions.length > 0 ? (
+                  screeningQuestions.map((q) => (
+                    <ScreeningQuestionCard
+                      key={q.id}
+                      question={q}
+                      value={answers[q.id]}
+                      onChange={(value) => handleAnswerChange(q.id, value)}
+                    />
+                  ))
+                ) : (
+                  <p>Loading questionsx...</p> // Show a loader while questions fetch
+                )}
+              </div>
+
+              <button
+                className={styles.uploadButton} // Re-using your upload button style
+                onClick={handleSubmitScreening}
+                style={{ marginTop: "2rem" }}
+              >
+                Submit Answers
+              </button>
             </div>
           )}
 
@@ -690,8 +806,22 @@ export default function () {
               )}
             </div>
           )}
+
+                    {currentStep == step[6] && (
+            <div className={styles.cvScreeningContainer}>
+              <img alt="" src={assetConstants.loading} />
+              <span className={styles.title}>Sit tight!</span>
+              <span className={styles.description}>
+                Our smart reviewer is checking your qualifications.
+              </span>
+              <span className={styles.description}>
+                We'll let you know what's next in just a moment.
+              </span>
+            </div>
+          )}
         </div>
       )}
     </>
   );
 }
+

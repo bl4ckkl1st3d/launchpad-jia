@@ -1,0 +1,297 @@
+/*
+ * src/lib/components/CareerComponents/ScreeningQuestionCard.scss
+ * Styles for the applicant-facing pre-screening question cards.
+ * Based on the Figma design (Frame 1171275795)
+ */
+
+// Font definition (if not already globally defined)
+@font-face {
+  font-family: 'Satoshi';
+  src: url('/fonts/Satoshi-Variable.woff2') format('woff2'); // Adjust path as needed
+  font-weight: 400 700;
+  font-style: normal;
+}
+
+// Main list container (was 'Frame 1171275795')
+.screening-question-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  gap: 16px;
+  width: 100%;
+  max-width: 855px; // From Figma
+}
+
+// The main card with the gradient border (was 'PSQ Cards')
+.screening-question-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 8px 0 0 0; // Creates the top gradient border
+  width: 100%;
+  
+  // Gradient/Primary/Blue -> Yellow (90deg, 50-opacity)
+  background: linear-gradient(
+    90deg,
+    rgba(159, 202, 237, 0.5) 0%,
+    rgba(206, 182, 218, 0.5) 34%,
+    rgba(235, 172, 201, 0.5) 67%,
+    rgba(252, 206, 192, 0.5) 100%
+  );
+  border-radius: 24px;
+  box-sizing: border-box;
+}
+
+// Inner wrapper for the card (was 'Heading and content')
+.card-inner-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 8px;
+  gap: 8px;
+  width: 100%;
+  background: #f8f9fc;
+  border-radius: 16px 16px 24px 24px;
+  box-sizing: border-box;
+  
+}
+
+// Header section (was 'Card heading wrapper')
+.card-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 4px 12px;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  
+}
+
+// Title text (was 'Heading')
+.card-title {
+  flex: 1; // Allows it to grow
+  font-family: 'Satoshi', sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 24px;
+  color: #414651;
+
+  .required-asterisk {
+    color: #b32318; // Or your theme's danger color
+  }
+}
+
+// Body section (was 'Content')
+.card-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 24px;
+  gap: 12px; // Gap for form groups
+  width: 100%;
+  background: #ffffff;
+  box-shadow: inset 0px 0px 2px rgba(0, 16, 53, 0.16);
+  border-radius: 16px;
+  box-sizing: border-box;
+
+}
+
+// --- Form Element Styles ---
+
+// Wrapper for a label + input (was 'Input with label')
+.form-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  gap: 6px;
+  width: 100%;
+  
+}
+
+// Label for inputs (was 'Label')
+.form-label {
+  font-family: 'Satoshi', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: #414651;
+}
+
+// Base styles for text inputs and textareas (was 'Input')
+.input-base {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 10px 14px;
+  gap: 8px;
+  width: 100%; // Default to full width
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 8px;
+  font-family: 'Satoshi', sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  color: #181d27;
+
+  &::placeholder {
+    color: #717680;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: #3b82f6; // Example focus color
+  }
+}
+
+// Apply base styles to input and textarea
+input[type='text'].input-base,
+textarea.input-base {
+  // Specific overrides if needed
+  max-width: 320px; // As seen in Figma for Short Answer
+}
+
+textarea.input-base {
+  max-width: 100%; // Long answer should be full-width
+  min-height: 80px;
+  resize: vertical;
+}
+
+// Wrapper for select dropdowns
+.select-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 320px; // As seen in Figma
+
+  select.input-base {
+    width: 100%;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+  }
+
+  // Chevron icon
+  .chevron-icon {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    pointer-events: none;
+    border: 1.67px solid #717680; // This is a trick to render the icon from Figma
+    border-color: #717680 transparent transparent transparent;
+    border-style: solid;
+    border-width: 1.67px 0 0 1.67px;
+    transform: rotate(-135deg) translateY(-50%); // Better chevron
+    top: 40%; // Adjust
+    right: 18px;
+    width: 8px;
+    height: 8px;
+  }
+}
+
+// Wrapper for checkbox groups
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+
+  .checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+
+    input[type='checkbox'] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+
+    span {
+      font-family: 'Satoshi', sans-serif;
+      font-size: 14px;
+      color: #181d27;
+    }
+  }
+}
+
+// Wrapper for Range inputs (was 'Salary Inputs')
+.range-inputs {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 0;
+  gap: 16px;
+  width: 100%;
+
+  .form-group {
+    flex: 1; // Make them share space
+  }
+
+  .range-input-field {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0; // Handled by .input-base
+    
+    // Override base input styles
+    input.input-base {
+      border-right: none;
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+      // This is tricky, the Figma shows a complex input.
+      // Re-using QuestionBuilder.scss's salary input is easier
+    }
+    
+    // --- Re-using styles from QuestionBuilder.scss for Range ---
+    // This is simpler and matches your other component
+    .salary-input-wrapper {
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      width: 100%;
+      border: 1px solid #d5d7da;
+      box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+      border-radius: 8px;
+      overflow: hidden; // Important for border radius
+
+      &__currency {
+        display: flex;
+        align-items: center;
+        padding: 10px 14px;
+        background: #f8f9fc;
+        border-right: 1px solid #e9eaeb;
+        font-family: 'Satoshi', sans-serif;
+        font-weight: 500;
+        font-size: 16px;
+        color: #717680;
+      }
+      
+      input[type="number"] {
+        flex: 1;
+        border: none;
+        padding: 10px 14px;
+        font-family: 'Satoshi', sans-serif;
+        font-weight: 500;
+        font-size: 16px;
+        color: #181d27;
+        min-width: 50px;
+
+        &:focus {
+          outline: none;
+        }
+      }
+    }
+  }
+}
