@@ -13,6 +13,7 @@ import Markdown from "react-markdown";
 import { useEffect, useRef, useState } from "react";
 import ScreeningQuestionCard from "@/lib/components/CareerComponents/ScreeningQuestionCard"; // <-- Import the new component
 import "@/lib/components/CareerComponents/QuestionBuilder.scss"; // Import styles for questions
+import Button from "../CareerSteps/Button";
 
 // Define the sections of the CV
 
@@ -45,7 +46,8 @@ export default function () {
   const [userCV, setUserCV] = useState(null);
   const [screeningQuestions, setScreeningQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
-  
+  const [error, setError] = useState(null);
+
   async function fetchCareerData(careerId) {
     try {
       const response = await axios.get(`/api/careers/${careerId}`);
@@ -56,65 +58,77 @@ export default function () {
     }
   }
 
-useEffect(() => {
-  if (currentStep !== step[1]) return;
+  useEffect(() => {
+    if (currentStep !== step[1]) return;
 
-  const selectedCareer = sessionStorage.getItem("selectedCareer");
-  if (!selectedCareer) {
-    console.error("❌ No selected career found in sessionStorage.");
-    return;
-  }
+    const selectedCareer = sessionStorage.getItem("selectedCareer");
+    if (!selectedCareer) {
+      console.error("❌ No selected career found in sessionStorage.");
+      return;
+    }
 
-  const parsedCareer = JSON.parse(selectedCareer);
-  console.log("🟢 Selected Career object:", parsedCareer);
+    const parsedCareer = JSON.parse(selectedCareer);
+    console.log("🟢 Selected Career object:", parsedCareer);
 
-  const questionList = parsedCareer.questions[0].questions || [];
-  if (questionList.length > 0) {
-    console.log("🟢 Question list to set in state:", questionList);
-    setScreeningQuestions(questionList);
+    const questionList = parsedCareer.questions[0].questions || [];
+    if (questionList.length > 0) {
+      console.log("🟢 Question list to set in state:", questionList);
+      setScreeningQuestions(questionList);
 
-    // Initialize answers
-    const initialAnswers = {};
-    questionList.forEach((q) => {
-      if (q.type === "Checkboxes") {
-        initialAnswers[q.id] = {};
-      } else {
-        initialAnswers[q.id] = "";
-      }
-    });
-    setAnswers(initialAnswers);
-  } else {
-    console.warn("⚠️ No custom questions found for this career.");
-    setScreeningQuestions([]);
-  }
-}, [currentStep]);
-
-
+      // Initialize answers
+      const initialAnswers = {};
+      questionList.forEach((q) => {
+        if (q.type === "Checkboxes") {
+          initialAnswers[q.id] = {};
+        } else {
+          initialAnswers[q.id] = "";
+        }
+      });
+      setAnswers(initialAnswers);
+    } else {
+      console.warn("⚠️ No custom questions found for this career.");
+      setScreeningQuestions([]);
+    }
+  }, [currentStep]);
 
 
-
-
- // Run when the step changes to 1
-
+  // Run when the step changes to 1
 
   // --- Handler to update the answers state ---
   const handleAnswerChange = (questionId, value) => {
-    setAnswers(prev => ({
+    setAnswers((prev) => ({
       ...prev,
       [questionId]: value,
     }));
   };
 
   // --- Handler for submitting the screening questions ---
-  const handleSubmitScreening = () => {
-    // 1. TODO: Add validation here to check for isRequired fields
-    
-    // 2. TODO: Save the 'answers' object to your database
-    console.log("Submitting answers:", answers);
+  
 
-    // 3. TODO: Move to the next step (which might be the loading screen again)
-    // setCurrentStep(step[2]); // Or whatever your next step is
-  };
+  
+const handleSubmitScreening = () => {
+  // 1. Validation
+  for (const question of screeningQuestions) {
+    const answer = answers[question.id];
+    
+    if (question.isRequired && (!answer || String(answer).trim() === '')) {
+      // 2. Show alert and STOP the function
+      alert(`Please answer the required question: "${question.text}"`);
+      return; 
+    }
+  }
+  
+  // 3. If validation passes, continue
+  console.log("Submitting answers:", answers);
+  setCurrentStep(step[2]);
+  setScreeningResult({
+    applicationStatus: "For AI Interview",
+    status: "For AI Interview",
+  });
+  setTimeout(() => {
+    setCurrentStep(step[3]);
+  }, 5000);
+};
 
   function handleDragOver(e) {
     e.preventDefault();
@@ -243,7 +257,7 @@ useEffect(() => {
     setLoading(false);
     // Set a dummy interview object to allow rendering for design purposes
     setInterview({
-      interviewID: 'DummyID', // Use the actual careerId      jobTitle: "Dummy Job Title",
+      interviewID: "DummyID", // Use the actual careerId      jobTitle: "Dummy Job Title",
       organization: { name: "Dummy Organization", image: "" },
     });
     // Set dummy screeningResult for step[2] design preview
@@ -319,7 +333,7 @@ useEffect(() => {
       }
     }
 
-    setCurrentStep(step[1]);
+    setCurrentStep(step[2]);
 
     if (hasChanges) {
       const formattedUserCV = cvSections.map((section) => ({
@@ -699,8 +713,6 @@ useEffect(() => {
             </>
           )}
 
-
-
           {currentStep == step[1] && (
             <div className={styles.cvScreeningContainer}>
               <span className={styles.title}>Pre-Screening Questions</span>
@@ -727,17 +739,25 @@ useEffect(() => {
                 )}
               </div>
 
-              <button
-                className={styles.uploadButton} // Re-using your upload button style
-                onClick={handleSubmitScreening}
-                style={{ marginTop: "2rem" }}
-              >
-                Submit Answers
-              </button>
+              {error && (
+                <div
+                  style={{
+                    color: "red",
+                    marginBottom: "1rem",
+                    fontWeight: "bold",
+                  }}
+                >
+                  {error}
+                </div>
+              )}
+
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <Button onClick={handleSubmitScreening}>Continue</Button>
+              </div>
             </div>
           )}
 
-          {currentStep == step[2] && screeningResult && (
+          {currentStep == step[3] && screeningResult && (
             <div className={styles.cvResultContainer}>
               {screeningResult.applicationStatus == "Dropped" ? (
                 <>
@@ -807,7 +827,7 @@ useEffect(() => {
             </div>
           )}
 
-                    {currentStep == step[6] && (
+          {currentStep == step[2] && (
             <div className={styles.cvScreeningContainer}>
               <img alt="" src={assetConstants.loading} />
               <span className={styles.title}>Sit tight!</span>
@@ -824,4 +844,3 @@ useEffect(() => {
     </>
   );
 }
-
