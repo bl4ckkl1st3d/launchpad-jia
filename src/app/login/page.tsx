@@ -65,3 +65,16 @@ export async function POST(request: Request) {
   //Commented for vercel build error 
   // Type error: Page "src/app/login/page.tsx" does not match the required types of a Next.js Page.
   //"POST" is not a valid Page export field.
+
+
+  "use client";
+
+export default function LoginPage() {
+  // You would put your login form JSX here.
+  // The form's submit action would call the `/login` API route.
+  return (
+    <div>
+      <h1>Login Page</h1>
+    </div>
+  );
+}
