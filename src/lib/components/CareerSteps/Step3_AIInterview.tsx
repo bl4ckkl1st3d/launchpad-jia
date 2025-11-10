@@ -110,10 +110,10 @@ const Step3_AIInterview: React.FC<CareerStepProps> = ({ careerData, setCareerDat
               <div className="form-group"> 
                 <h3 className="form-section__title-with-icon"> 
                   <span className="gradient-icon">✨</span> 
-                  AI-Generated Preamble
+                  AI Interview Secret Prompt
                 </h3>
                 <p className="form-section__description"> 
-                  This preamble will be shown to the candidate. You can edit it as needed.
+                  Secret Prompt gives you extra control over Jia's evaluation style, complementing her accurate assessment of requirements from the job description
                 </p>
               </div>
               <div className="form-group"> 

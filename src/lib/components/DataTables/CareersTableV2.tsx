@@ -292,7 +292,15 @@ export default function CareersV2Table() {
                         onClick={(e) => {
                           if (e.defaultPrevented) return;
                           e.preventDefault();
-                          window.location.href = `/recruiter-dashboard/careers/manage/${item._id}`;
+                          
+                          // Check if status is 'Unpublished' (as 'draft')
+                          if (item.status === "draft") {
+                            // Redirect to new-career page with ID to load preexisting data
+                            window.location.href = `/recruiter-dashboard/careers/new-career?id=${item._id}`;
+                          } else {
+                            // Original redirect for published/other statuses
+                            window.location.href = `/recruiter-dashboard/careers/manage/${item._id}`;
+                          }
                         }}
                       >
                         <th scope="row" style={{ maxWidth: "300px", whiteSpace: "initial" }}>

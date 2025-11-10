@@ -38,6 +38,47 @@ export async function POST(request: Request) {
   }
 }
 
+// This function now correctly handles GET requests
+export async function GET(request: Request) {
+  try {
+    // Read 'id' and 'orgID' from URL search parameters, not the body
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    const orgID = searchParams.get('orgID');
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "Career ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const { db } = await connectMongoDB();
+
+    const query: any = { _id: new ObjectId(id) };
+    if (orgID) {
+      query.orgID = orgID;
+    }
+
+    // Now fetches from careers, which includes drafts
+    const career = await db.collection("careers").findOne(query);
+
+    if (!career) {
+      return NextResponse.json({ error: "Career not found" }, { status: 404 });
+    }
+
+    // Return the career data with a success flag
+    return NextResponse.json({ success: true, career: career });
+
+  } catch (error) {
+    console.error("Error fetching career:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch career data" },
+      { status: 500 }
+    );
+  }
+}
+
 // For saving a draft
 export async function PUT(request: Request) {
   try {

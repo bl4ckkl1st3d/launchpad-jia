@@ -45,14 +45,17 @@ import React from "react";
 import HeaderBar from "@/lib/PageComponent/HeaderBar";
 import CareerForm from "@/lib/components/CareerComponents/CareerForm";
 import NewCareerWizard from "@/lib/components/CareerComponents/NewCareerWizard";
+import { useSearchParams } from "next/navigation";
 
 export default function NewCareerPage() {
+  const searchParams = useSearchParams();
+  const careerId = searchParams.get("id");
     return (
         <>
         <HeaderBar activeLink="Careers" currentPage="Add new career" icon="la la-suitcase" />
         <div className="container-fluid mt--7" style={{ paddingTop: "6rem" }}>
           <div className="row">
-            <NewCareerWizard />
+            <NewCareerWizard careerId={careerId}/>
 
             {/* <CareerForm formType="add" /> */}
           </div>
