@@ -248,20 +248,20 @@ const handleSubmitScreening = () => {
 
     if (storedSelectedCareer) {
       const parseStoredSelectedCareer = JSON.parse(storedSelectedCareer);
-      // fetchInterview(parseStoredSelectedCareer.id); // Commented out for design override
+      //fetchInterview(parseStoredSelectedCareer.id); // Commented out for design override
     } else {
       // alert("No application is currently being managed."); // Commented out for design override
       // window.location.href = pathConstants.dashboard; // Commented out for design override
     }
 
     // Temporarily override currentStep for design purposes
-    setCurrentStep(step[0]); // Set to "Review Next Steps" for design preview
+    setCurrentStep(step[1]); // Set to "Review Next Steps" for design preview
     setLoading(false);
     // Set a dummy interview object to allow rendering for design purposes
     setInterview({
       interviewID: "DummyID", // Use the actual careerId      jobTitle: "Dummy Job Title",
-      jobTitle:"Dummy Job Title",
-      organization: { name: "Dummy Organization", image: "" },
+      jobTitle:"Software Developer",
+      organization: { name: "ARAM Mayhem", image: "https://png.pngtree.com/png-vector/20221128/ourlarge/pngtree-a-logo-png-image_6483901.png" },
     });
     // Set dummy screeningResult for step[2] design preview
     setScreeningResult({
@@ -336,7 +336,7 @@ const handleSubmitScreening = () => {
       }
     }
 
-    setCurrentStep(step[2]);
+    setCurrentStep(step[1]);
 
     if (hasChanges) {
       const formattedUserCV = cvSections.map((section) => ({
