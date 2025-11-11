@@ -95,13 +95,14 @@ export async function PUT(request: Request) {
       status: 'draft', // Always a draft when saved from the wizard's save draft function
     };
     delete careerDocument._id;
+    delete careerDocument.createdAt;
 
 
     await db.collection("careers").updateOne(
       { _id: careerId },
       { 
         $set: careerDocument,
-      
+        $setOnInsert: { createdAt: new Date() }
       },
       { upsert: true }
     );

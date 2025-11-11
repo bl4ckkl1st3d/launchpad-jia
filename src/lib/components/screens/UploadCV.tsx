@@ -260,7 +260,7 @@ const handleSubmitScreening = () => {
     // Set a dummy interview object to allow rendering for design purposes
     setInterview({
       interviewID: "DummyID", // Use the actual careerId      jobTitle: "Dummy Job Title",
-      jobTitle:"Software Developer",
+      jobTitle:"Software Engineer",
       organization: { name: "ARAM Mayhem", image: "https://png.pngtree.com/png-vector/20221128/ourlarge/pngtree-a-logo-png-image_6483901.png" },
     });
     // Set dummy screeningResult for step[2] design preview
