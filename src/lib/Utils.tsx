@@ -615,7 +615,34 @@ export const getInvitationEmailTemplate = (
     </div>
   </div>
 `;
+// --- ADDED XSS HELPER FUNCTIONS ---
 
+/**
+ * Checks for simple HTML characters.
+ * Use on simple text fields (like jobTitle, city) that should never have HTML.
+ * @param str The string to check.
+ * @returns true if the string contains '<' or '>', false otherwise.
+ */
+export const containsHtmlChars = (str: string): boolean => {
+  if (!str) return false;
+  // This regex checks for the literal characters '<' or '>'
+  return /[<>]/.test(str);
+};
+
+/**
+ * Checks for common XSS attack vectors.
+ * Use on rich text or long text fields (like description, workSetupRemarks)
+ * where we want to allow safe HTML but block dangerous scripts.
+ * @param str The string to check.
+ * @returns true if the string contains a potential XSS vector, false otherwise.
+ */
+export const isPotentiallyMalicious = (str: string): boolean => {
+  if (!str) return false;
+  // This regex looks for <script, onerror=, onload=, or javascript:
+  // which are common indicators of XSS attacks.
+  const maliciousRegex = /(<script|onerror\s*=|onload\s*=|javascript:)/i;
+  return maliciousRegex.test(str);
+};
 export const clearUserSession = () => {
   localStorage.removeItem("authToken");
   localStorage.removeItem("user");

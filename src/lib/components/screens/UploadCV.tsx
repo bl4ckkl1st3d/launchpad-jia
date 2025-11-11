@@ -7,7 +7,10 @@ import styles from "@/lib/styles/screens/uploadCV.module.scss";
 import { useAppContext } from "@/lib/context/ContextV2";
 import { assetConstants, pathConstants } from "@/lib/utils/constantsV2";
 import { checkFile } from "@/lib/utils/helpersV2";
-import { CORE_API_URL } from "@/lib/Utils";
+import { CORE_API_URL,
+  errorToast,
+  containsHtmlChars,
+  isPotentiallyMalicious,} from "@/lib/Utils";
 import axios from "axios";
 import Markdown from "react-markdown";
 import { useEffect, useRef, useState } from "react";
@@ -48,15 +51,7 @@ export default function () {
   const [answers, setAnswers] = useState({});
   const [error, setError] = useState(null);
 
-  async function fetchCareerData(careerId) {
-    try {
-      const response = await axios.get(`/api/careers/${careerId}`);
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching career data:", error);
-      return null;
-    }
-  }
+
 
   useEffect(() => {
     if (currentStep !== step[1]) return;
@@ -108,18 +103,25 @@ export default function () {
   
 const handleSubmitScreening = () => {
   // 1. Validation
+  console.log("Submitting answers:", answers);
+
   for (const question of screeningQuestions) {
     const answer = answers[question.id];
     
-    if (question.isRequired && (!answer || String(answer).trim() === '')) {
+    if (!answer || String(answer).trim() === '') {
       // 2. Show alert and STOP the function
-      alert(`Please answer the required question: "${question.text}"`);
+      errorToast(`Please answer the question: "${question.title}"`,1500);
+      
       return; 
+    }
+    if (isPotentiallyMalicious(String(answer))) {
+      errorToast(`Your answer to "${question.title}" contains invalid characters.`,1500);
+      return;
     }
   }
   
   // 3. If validation passes, continue
-  console.log("Submitting answers:", answers);
+  
   setCurrentStep(step[2]);
   setScreeningResult({
     applicationStatus: "For AI Interview",
@@ -253,11 +255,12 @@ const handleSubmitScreening = () => {
     }
 
     // Temporarily override currentStep for design purposes
-    setCurrentStep(step[1]); // Set to "Review Next Steps" for design preview
+    setCurrentStep(step[0]); // Set to "Review Next Steps" for design preview
     setLoading(false);
     // Set a dummy interview object to allow rendering for design purposes
     setInterview({
       interviewID: "DummyID", // Use the actual careerId      jobTitle: "Dummy Job Title",
+      jobTitle:"Dummy Job Title",
       organization: { name: "Dummy Organization", image: "" },
     });
     // Set dummy screeningResult for step[2] design preview
@@ -751,9 +754,11 @@ const handleSubmitScreening = () => {
                 </div>
               )}
 
-              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <div style={{ display: "flex", justifyContent: "flex-end",width:"100%",paddingTop:"20px"}}>
                 <Button onClick={handleSubmitScreening}>Continue</Button>
               </div>
+
+
             </div>
           )}
 

@@ -1,7 +1,7 @@
 // src/lib/components/CareerComponents/QuestionBuilder.tsx
 "use client";
 
-import { useState } from "react";
+/* import { useState } from "react"; */
 import "./QuestionBuilder.scss";
 
 // ---
@@ -16,41 +16,65 @@ export default function QuestionBuilder({
   onUpdate,
   onDelete,
 }) {
-  const [title, setTitle] = useState(initialQuestion.title || "");
-  const [type, setType] = useState(initialQuestion.type || "Dropdown");
-  const [options, setOptions] = useState(initialQuestion.options || ["Option 1"]);
+  /* a */
+  const title = initialQuestion.title || "";
+  const type = initialQuestion.type || "Dropdown";
+  // Ensure options is always an array
+  const options = Array.isArray(initialQuestion.options) ? initialQuestion.options : [];
 
   // --- Handlers for this specific question card ---
 
   const handleTitleChange = (e) => {
-    setTitle(e.target.value);
-    // TODO: Add a debounce here later so it doesn't fire on every keystroke
-    onUpdate(initialQuestion.id, { title: e.target.value, type, options });
+    // Pass back the *entire* question object with the one change
+    onUpdate(initialQuestion.id, {
+      ...initialQuestion, // Spread existing data
+      title: e.target.value,
+      type: type, // Ensure existing values are passed
+      options: options, // Ensure existing values are passed
+    });
   };
 
   const handleTypeChange = (e) => {
-    const newType = e.target.value;
-    setType(newType);
-    onUpdate(initialQuestion.id, { title, type: newType, options });
+    onUpdate(initialQuestion.id, {
+      ...initialQuestion,
+      title: title,
+      type: e.target.value,
+      options: options,
+    });
   };
 
   const handleOptionChange = (index, value) => {
-    const newOptions = [...options];
+    const newOptions = [...options]; // Use the prop-derived options
     newOptions[index] = value;
-    setOptions(newOptions);
-    onUpdate(initialQuestion.id, { title, type, options: newOptions });
+
+    onUpdate(initialQuestion.id, {
+      ...initialQuestion,
+      title: title,
+      type: type,
+      options: newOptions,
+    });
   };
 
   const handleAddOption = () => {
     const newOptions = [...options, `Option ${options.length + 1}`];
-    setOptions(newOptions);
-    onUpdate(initialQuestion.id, { title, type, options: newOptions });
+
+    onUpdate(initialQuestion.id, {
+      ...initialQuestion,
+      title: title,
+      type: type,
+      options: newOptions,
+    });
   };
 
   const handleDeleteOption = (index) => {
     const newOptions = options.filter((_, i) => i !== index);
-    setOptions(newOptions);
-    onUpdate(initialQuestion.id, { title, type, options: newOptions });
+
+    onUpdate(initialQuestion.id, {
+      ...initialQuestion,
+      title: title,
+      type: type,
+      options: newOptions,
+    });
   };
 
   // --- Icons for the dropdown ---

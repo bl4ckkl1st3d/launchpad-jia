@@ -12,10 +12,15 @@ import Step2_CVReview from "../CareerSteps/Step2_CVReview";
 import Step3_AIInterview from "../CareerSteps/Step3_AIInterview";
 import Step4_Review from "../CareerSteps/Step4_Review";
 import { useAppContext } from "@/lib/context/AppContext";
-import { errorToast, candidateActionToast } from "@/lib/Utils";
+import { errorToast, candidateActionToast,containsHtmlChars,
+  isPotentiallyMalicious, } from "@/lib/Utils";
 // At the top, with your other imports
 import { useSearchParams } from "next/navigation";
 import FullScreenLoadingAnimation from "./FullScreenLoadingAnimation";
+/**
+ * Checks for simple HTML characters.
+ * Use on simple text fields (like jobTitle, city) that should never have HTML.
+ */
 
 // We create a new, comprehensive interface for all steps
 export interface CareerData {
@@ -117,7 +122,7 @@ export default function NewCareerWizard({ careerId }: NewCareerWizardProps) {
           setDraftId(fetchedData._id);
 
           // Allow navigation to all steps
-          setMaxAchievedStep(4);
+          setMaxAchievedStep(1);
 
           // Start at step 1
           setCurrentStep(1);
@@ -131,7 +136,7 @@ export default function NewCareerWizard({ careerId }: NewCareerWizardProps) {
           setMaxAchievedStep(1);
         }
       } catch (error) {
-        console.log(error)
+        console.log(error);
         console.error("Error fetching career data:", error);
         errorToast("Error loading draft", 1500);
         // Reset to new career state on error
@@ -156,7 +161,6 @@ export default function NewCareerWizard({ careerId }: NewCareerWizardProps) {
     }
   }, [careerId, orgID]);
 
-  
   useEffect(() => {
     if (currentStep === 1) {
       validateStep1();
@@ -238,27 +242,46 @@ export default function NewCareerWizard({ careerId }: NewCareerWizardProps) {
 
     const step1Errors: Step1Errors = {};
 
+    // --- Validation for jobTitle ---
     if (!jobTitle || jobTitle.trim().length === 0) {
       step1Errors.jobTitle = "This is a required field";
+    } else if (containsHtmlChars(jobTitle)) {
+      step1Errors.jobTitle = "Job title cannot contain < or > characters.";
     }
+
+    // --- Validation for workSetup ---
     if (!workSetup || workSetup.trim().length === 0) {
       step1Errors.workSetup = "This is a required field";
     }
+
+    // --- Validation for employmentType ---
     if (!employmentType || employmentType.trim().length === 0) {
       step1Errors.employmentType = "This is a required field";
     }
+
+    // --- Validation for province ---
     if (!province || province.trim().length === 0) {
       step1Errors.province = "This is a required field";
+    } else if (containsHtmlChars(province)) {
+      step1Errors.province = "Province cannot contain < or > characters.";
     }
+
+    // --- Validation for city ---
     if (!city || city.trim().length === 0) {
       step1Errors.city = "This is a required field";
+    } else if (containsHtmlChars(city)) {
+      step1Errors.city = "City cannot contain < or > characters.";
     }
+
+    // --- Validation for description ---
     if (!description || description.trim().length === 0) {
       step1Errors.description = "This is a required field";
+    } else if (isPotentiallyMalicious(description)) {
+      step1Errors.description =
+        "Description contains potentially malicious scripts.";
     }
 
     // Salary checks
-
     const minIsMissing = !minimumSalary;
     const maxIsMissing = !maximumSalary;
 
@@ -269,7 +292,6 @@ export default function NewCareerWizard({ careerId }: NewCareerWizardProps) {
       step1Errors.maximumSalary = "This is a required field";
     }
 
-    // Only if NEITHER is missing, check the comparison
     if (!minIsMissing && !maxIsMissing) {
       if (Number(minimumSalary) > Number(maximumSalary)) {
         step1Errors.minimumSalary =
@@ -307,10 +329,12 @@ export default function NewCareerWizard({ careerId }: NewCareerWizardProps) {
     const { workSetupRemarks, questions } = careerData;
     const step2Errors: Step2Errors = {};
 
-    console.log("Current workSetupRemarks:", workSetupRemarks);
+    // --- Validation for workSetupRemarks ---
     if (!workSetupRemarks || workSetupRemarks.trim().length === 0) {
       step2Errors.workSetupRemarks = "AI custom instructions cannot be empty.";
-      console.log("Validation error: AI custom instructions are empty.");
+    } else if (isPotentiallyMalicious(workSetupRemarks)) {
+      step2Errors.workSetupRemarks =
+        "Instructions contain potentially malicious scripts.";
     }
 
     const questionsList = questions || [];
@@ -318,28 +342,30 @@ export default function NewCareerWizard({ careerId }: NewCareerWizardProps) {
     questionsList.forEach((category) => {
       category.questions.forEach((q) => {
         console.log(`Validating question id: ${q.id}`, q);
+        // --- Validation for question title ---
         if (!q.title || q.title.trim().length === 0) {
           step2Errors[q.id] = "Question title cannot be empty.";
-          console.log(
-            `Validation error: Question with id ${q.id} has an empty title.`
-          );
+        } else if (containsHtmlChars(q.title)) {
+          step2Errors[q.id] = "Question title cannot contain < or >.";
         }
       });
     });
 
-    // We only want to set errors for Step 2, preserving Step 1 errors
-    setErrors((prev) => {
+setErrors((prev) => {
       // Create a copy of previous errors
       const newErrors = { ...prev };
 
-      // Remove old Step 2 errors
-      Object.keys(newErrors).forEach((key) => {
-        if (key === "workSetupRemarks" || !isNaN(Number(key))) {
-          delete newErrors[key];
-        }
+      // 1. Delete the static key
+      delete newErrors.workSetupRemarks;
+
+      // 2. Delete all dynamic question keys that currently exist
+      questionsList.forEach((category) => {
+        category.questions.forEach((q) => {
+          delete newErrors[q.id];
+        });
       });
 
-      // Add new Step 2 errors
+      // 3. Add back only the new errors
       return { ...newErrors, ...step2Errors };
     });
 
@@ -357,13 +383,19 @@ export default function NewCareerWizard({ careerId }: NewCareerWizardProps) {
     const { customInterviewQuestions } = careerData;
     const step3Errors: Step3Errors = {};
     let emptyCount = 0;
+    let maliciousCount = 0; // New counter for XSS
 
     if (customInterviewQuestions) {
       customInterviewQuestions.forEach((q, index) => {
+        // --- Validation for custom question text ---
         if (!q.text || q.text.trim().length === 0) {
           emptyCount++;
           step3Errors[`customInterviewQuestion_${index}`] =
             "Question text cannot be empty.";
+        } else if (isPotentiallyMalicious(q.text)) {
+          maliciousCount++;
+          step3Errors[`customInterviewQuestion_${index}`] =
+            "Question text contains potentially malicious scripts.";
         }
       });
     }
@@ -373,11 +405,12 @@ export default function NewCareerWizard({ careerId }: NewCareerWizardProps) {
         "At least 5 custom interview questions are required.";
     } else if (emptyCount > 0) {
       step3Errors.customInterviewQuestions = `You have ${emptyCount} question(s) with an empty text.`;
+    } else if (maliciousCount > 0) {
+      step3Errors.customInterviewQuestions = `You have ${maliciousCount} question(s) with malicious scripts.`;
     }
 
     setErrors((prev) => {
       const newErrors = { ...prev };
-      // remove old step 3 errors
       Object.keys(newErrors).forEach((key) => {
         if (key.startsWith("customInterviewQuestion")) {
           delete newErrors[key];
@@ -528,144 +561,142 @@ export default function NewCareerWizard({ careerId }: NewCareerWizardProps) {
     }
   };
 
-return (
-  <>
-    {/* This shows the loader while fetching */}
-    {isFetchingData && <FullScreenLoadingAnimation title="Loading Career..." subtext=""/>}
-    
-    {/* This wrapper hides the form until data is ready */}
-    <div
-      className="new-career-wizard"
-      style={{
-        width: "100%",
-        opacity: isFetchingData ? 0 : 1, // Hide content while fetching
-        transition: "opacity 0.3s ease-in-out",
-      }}
-    >
-      {/* --- START: Your new header block --- */}
+  return (
+    <>
+      {/* This shows the loader while fetching */}
+      {isFetchingData && (
+        <FullScreenLoadingAnimation title="Loading Career..." subtext="" />
+      )}
+
+      {/* This wrapper hides the form until data is ready */}
       <div
+        className="new-career-wizard"
         style={{
-          marginBottom: "35px",
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
           width: "100%",
-          border: "1px solid #D5D7DA",
+          opacity: isFetchingData ? 0 : 1, // Hide content while fetching
+          transition: "opacity 0.3s ease-in-out",
         }}
       >
-        <h1
-          style={{ fontSize: "24px", fontWeight: 550, color: "#111827" }}
+        {/* --- START: Your new header block --- */}
+        <div
+          style={{
+            marginBottom: "35px",
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            width: "100%",
+            border: "1px solid #D5D7DA",
+          }}
         >
-          {draftId ? (
-            <span>
-              <span style={{ color: "#6B7280" }}>[DRAFT] </span>
-              {careerData.jobTitle || "..."}
-            </span>
-          ) : (
-            "Add new career"
-          )}
-        </h1>
+          <h1 style={{ fontSize: "24px", fontWeight: 550, color: "#111827" }}>
+            {draftId ? (
+              <span>
+                <span style={{ color: "#6B7280" }}>[DRAFT] </span>
+                {careerData.jobTitle || "..."}
+              </span>
+            ) : (
+              "Add new career"
+            )}
+          </h1>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: "10px",
+            }}
+          >
+            <button
+              disabled={careerData.jobTitle.trim() === "" || isLoading}
+              style={{
+                width: "fit-content",
+                color: "#414651",
+                background: "#fff",
+                border: "1px solid #D5D7DA",
+                padding: "8px 16px",
+                borderRadius: "60px",
+                cursor:
+                  careerData.jobTitle.trim() === "" || isLoading
+                    ? "not-allowed"
+                    : "pointer",
+                whiteSpace: "nowrap",
+              }}
+              onClick={() => {
+                handleSaveCareer("inactive");
+              }}
+            >
+              Save as Unpublished
+            </button>
+            <button
+              disabled={careerData.jobTitle.trim() === "" || isLoading}
+              style={{
+                width: "fit-content",
+                background:
+                  careerData.jobTitle.trim() === "" || isLoading
+                    ? "#D5D7DA"
+                    : "black",
+                color: "#fff",
+                border: "1px solid #E9EAEB",
+                padding: "8px 16px",
+                borderRadius: "60px",
+                cursor:
+                  careerData.jobTitle.trim() === "" || isLoading
+                    ? "not-allowed"
+                    : "pointer",
+                whiteSpace: "nowrap",
+              }}
+              onClick={handleSaveAndNext}
+            >
+              {currentStep === 4 ? (
+                <>
+                  <i
+                    className="la la-check-circle"
+                    style={{ color: "#fff", fontSize: 20, marginRight: 8 }}
+                  ></i>
+                  Save as Published
+                </>
+              ) : (
+                <>
+                  Save and Next
+                  <i
+                    className="la la-arrow-right"
+                    style={{ color: "#fff", fontSize: 16, marginLeft: 8 }}
+                  ></i>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+        {/* --- END: Your new header block --- */}
+
+        {/* --- START: Centered pill header --- */}
         <div
           style={{
             display: "flex",
-            flexDirection: "row",
-            alignItems: "center",
-            gap: "10px",
+            justifyContent: "center",
+            width: "100%",
+            border: "1px solid #D5D7DA",
           }}
         >
-          <button
-            disabled={careerData.jobTitle.trim() === "" || isLoading}
-            style={{
-              width: "fit-content",
-              color: "#414651",
-              background: "#fff",
-              border: "1px solid #D5D7DA",
-              padding: "8px 16px",
-              borderRadius: "60px",
-              cursor:
-                careerData.jobTitle.trim() === "" || isLoading
-                  ? "not-allowed"
-                  : "pointer",
-              whiteSpace: "nowrap",
-            }}
-            onClick={() => {
-              handleSaveCareer("inactive");
-            }}
-          >
-            Save as Unpublished
-          </button>
-          <button
-            disabled={careerData.jobTitle.trim() === "" || isLoading}
-            style={{
-              width: "fit-content",
-              background:
-                careerData.jobTitle.trim() === "" || isLoading
-                  ? "#D5D7DA"
-                  : "black",
-              color: "#fff",
-              border: "1px solid #E9EAEB",
-              padding: "8px 16px",
-              borderRadius: "60px",
-              cursor:
-                careerData.jobTitle.trim() === "" || isLoading
-                  ? "not-allowed"
-                  : "pointer",
-              whiteSpace: "nowrap",
-            }}
-            onClick={handleSaveAndNext}
-          >
-            {currentStep === 4 ? (
-              <>
-                <i
-                  className="la la-check-circle"
-                  style={{ color: "#fff", fontSize: 20, marginRight: 8 }}
-                ></i>
-                Save as Published
-              </>
-            ) : (
-              <>
-                Save and Next
-                <i
-                  className="la la-arrow-right"
-                  style={{ color: "#fff", fontSize: 16, marginLeft: 8 }}
-                ></i>
-              </>
-            )}
-          </button>
+          <SegmentedHeader
+            currentStep={currentStep}
+            maxAchievedStep={maxAchievedStep}
+            setStep={setCurrentStep}
+            errors={errors}
+          />
+        </div>
+        {/* --- END: Centered pill header --- */}
+
+        {/* The content for the current step */}
+        <div className="p-8">
+          {renderStep()}
+
+          {/* Navigation buttons */}
         </div>
       </div>
-      {/* --- END: Your new header block --- */}
-
-      {/* --- START: Centered pill header --- */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          width: "100%",
-          border: "1px solid #D5D7DA",
-        }}
-      >
-        <SegmentedHeader
-          currentStep={currentStep}
-          maxAchievedStep={maxAchievedStep}
-          setStep={setCurrentStep}
-          errors={errors}
-        />
-      </div>
-      {/* --- END: Centered pill header --- */}
-
-      {/* The content for the current step */}
-      <div className="p-8">
-        {renderStep()}
-
-        {/* Navigation buttons */}
-      </div>
-    </div>
-  </>
-);
-
-
+    </>
+  );
 }
 
 // --- UPDATED: 'errors' prop removed ---

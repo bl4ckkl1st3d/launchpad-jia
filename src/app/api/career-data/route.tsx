@@ -96,11 +96,12 @@ export async function PUT(request: Request) {
     };
     delete careerDocument._id;
 
+
     await db.collection("careers").updateOne(
       { _id: careerId },
       { 
         $set: careerDocument,
-        $setOnInsert: { createdAt: new Date() }
+      
       },
       { upsert: true }
     );
